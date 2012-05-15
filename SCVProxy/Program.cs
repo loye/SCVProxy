@@ -12,7 +12,7 @@ namespace SCVProxy
         static void Main(string[] args)
         {
             Regex HEADER_REGEX = new Regex(
-                @"(?:(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
+                @"(?:^(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|^(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
                 RegexOptions.Compiled);
             string src1 = @"
 GET http://clients2.google.com/service HTTP/1.1
@@ -45,7 +45,8 @@ Connection: Transfer-Encoding
             //Console.WriteLine(result1.Groups["response"].Value);
             //Console.WriteLine(result2.Success);
 
-            new Listener("127.0.0.1", 1002, "127.0.0.1", 8888).Start();
+            new Listener("127.0.0.1", 1002).Start();
+            //new Listener("127.0.0.1", 1002, "127.0.0.1", 8888).Start();
 
             //Console.WriteLine(0x30 == '0');
 
@@ -56,6 +57,8 @@ Connection: Transfer-Encoding
             //byte[] t2 = new byte[16];
 
             //Console.WriteLine(mem.Position);
+
+            //Console.WriteLine(string.Format("[{0}]", (DateTime.Now-DateTime.Parse("2012-5-15"))));
 
             while (true)
             {

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -10,11 +9,13 @@ namespace SCVProxy
 {
     public class HttpPackage
     {
-        private const int BUFFER_LENGTH = 1024;
+        private const int BUFFER_LENGTH = 4096;
 
         private static readonly Regex HEADER_REGEX = new Regex(
-            @"(?:(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
+            @"(?:^(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|^(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
             RegexOptions.Compiled);
+
+        private int _chunkedNextBlockOffset;
 
         public string HttpMethod { get; private set; }
 
@@ -40,14 +41,12 @@ namespace SCVProxy
 
         public int Length { get; private set; }
 
-        public int ContentOffset { get { return Header == null ? Length : Header.Length; } }
+        public int ContentOffset { get; private set; }
 
         public int ContentLength { get; private set; }
 
-
-        private HttpPackage(byte[] bin, Match match)
+        private HttpPackage(Match match)
         {
-            this.Binary = bin;
             if (match.Groups["request"].Success)
             {
                 this.HttpMethod = match.Groups["method"].Value;
@@ -73,9 +72,11 @@ namespace SCVProxy
             }
             this.HeaderItems = headerItems;
             this.Header = match.Captures[0].Value;
+            this.ContentOffset = this.Header.Length;
             this.ContentLength = headerItems.ContainsKey("Content-Length")
                 ? int.Parse(headerItems["Content-Length"])
                 : (headerItems.ContainsKey("Transfer-Encoding") && headerItems["Transfer-Encoding"] == "chunked" ? -1 : 0);
+            this._chunkedNextBlockOffset = this.ContentOffset;
         }
 
         public static HttpPackage Read(NetworkStream stream)
@@ -108,15 +109,16 @@ namespace SCVProxy
                 Match match = HEADER_REGEX.Match(str);
                 if (match.Success)
                 {
-                    package = new HttpPackage(bin, match);
+                    package = new HttpPackage(match);
                 }
                 else
                 {
-                    Console.WriteLine("NOT MATCH:\r\n" + str);
+                    Console.WriteLine("NOT MATCH:########################################\r\n" + str);
                 }
             }
             if (package != null)
             {
+                package.Binary = bin;
                 package.Length = length;
                 if (package.ContentLength == 0)
                 {
@@ -124,22 +126,26 @@ namespace SCVProxy
                 }
                 else if (package.ContentLength > 0)
                 {
-                    isValid = bin.Length >= package.ContentOffset + package.ContentLength;
+                    isValid = package.Length >= package.ContentOffset + package.ContentLength;
                 }
                 else // Transfer-Encoding: chunked
                 {
                     Console.WriteLine("Transfer-Encoding: chunked");
-
-                    isValid = ValidateChunkedBlock(package, package.ContentOffset);
+                    isValid = ValidateChunkedBlock(package);
+                    if (isValid)
+                    {
+                        package.ContentLength = package.Length - package.ContentOffset;
+                    }
                 }
             }
             return isValid;
         }
 
-        private static bool ValidateChunkedBlock(HttpPackage package, int startIndex)
+        private static bool ValidateChunkedBlock(HttpPackage package)
         {
             byte[] bin = package.Binary;
             int length = package.Length;
+            int startIndex = package._chunkedNextBlockOffset;
             if (startIndex > length - 5)
             {
                 return false;
@@ -154,7 +160,6 @@ namespace SCVProxy
             }
             else
             {
-                // TODO:
                 int contentLength = 0;
                 int i = startIndex;
                 for (int temp = bin[i]; temp != 0x0D && i < length; temp = bin[++i])
@@ -163,12 +168,10 @@ namespace SCVProxy
                     {
                         return false;
                     }
-                    contentLength += contentLength * 16 + temp > 0x40
-                        ? (temp > 0x60 ? temp - 0x60 : temp - 0x40) + 9
-                        : temp - 30;
+                    contentLength = contentLength * 16 + (temp > 0x40 ? (temp > 0x60 ? temp - 0x60 : temp - 0x40) + 9 : temp - 0x30);
                 }
-                int nextStartIndex = i + contentLength + 3;
-                return ValidateChunkedBlock(package, nextStartIndex);
+                package._chunkedNextBlockOffset = i + 4 + contentLength;
+                return ValidateChunkedBlock(package);
             }
         }
     }

@@ -26,7 +26,7 @@ namespace SCVProxy
 
         public void Start()
         {
-            this.tcpListener.Start(50);
+            this.tcpListener.Start(100);
             this.tcpListener.BeginAcceptTcpClient(new AsyncCallback(DoAccept), tcpListener);
         }
 
@@ -39,16 +39,21 @@ namespace SCVProxy
                 using (NetworkStream stream = client.GetStream())
                 {
                     HttpPackage request = HttpPackage.Read(stream);
-                    Console.WriteLine(request.StartLine);
+                    Console.WriteLine(string.Format("{0}[{1}={2}+{3}]",
+                        request.StartLine,
+                        request.Length,
+                        request.ContentOffset,
+                        request.ContentLength));
+                    DateTime startTime = DateTime.Now;
                     HttpPackage response = this.miner.Fech(request, this.Proxy);
                     if (response != null)
                     {
-                        Console.WriteLine(response.StartLine);
+                        Console.WriteLine(string.Format("{0}[{1}]", response.StartLine, (DateTime.Now - startTime)));
                         stream.Write(response.Binary, 0, response.Length);
                     }
                     else
                     {
-                        Console.WriteLine("NULL ERROR:\r\n" + request.Header);
+                        Console.WriteLine("NULL ERROR:#########################################\r\n" + request.Header);
                     }
                 }
             }
