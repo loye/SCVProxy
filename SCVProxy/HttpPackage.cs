@@ -93,11 +93,17 @@ namespace SCVProxy
                     byte[] bin = mem.GetBuffer();
                     if (ValidatePackage(bin, (int)mem.Length, ref package))
                     {
-                        return package;
+                        if (package.ContentLength == 0
+                            && package.HeaderItems.ContainsKey("Connection")
+                            && package.HeaderItems["Connection"] == "close") // Connection: close
+                        {
+                            continue;
+                        }
+                        break;
                     }
                 }
             }
-            return null;
+            return package;
         }
 
         private static bool ValidatePackage(byte[] bin, int length, ref HttpPackage package)
