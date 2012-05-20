@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -79,7 +78,7 @@ namespace SCVProxy
             this._chunkedNextBlockOffset = this.ContentOffset;
         }
 
-        public static HttpPackage Read(NetworkStream stream)
+        public static HttpPackage Read(Stream stream)
         {
             HttpPackage package = null;
             byte[] buffer = new byte[BUFFER_LENGTH];
@@ -103,6 +102,13 @@ namespace SCVProxy
                     }
                 }
             }
+            return package;
+        }
+
+        public static HttpPackage Read(byte[] bin)
+        {
+            HttpPackage package = null;
+            ValidatePackage(bin, bin.Length, ref package);
             return package;
         }
 
@@ -150,35 +156,22 @@ namespace SCVProxy
         private static bool ValidateChunkedBlock(HttpPackage package)
         {
             byte[] bin = package.Binary;
-            int length = package.Length;
-            int startIndex = package._chunkedNextBlockOffset;
+            int length = package.Length, startIndex = package._chunkedNextBlockOffset;
             if (startIndex > length - 5)
             {
                 return false;
             }
-            else if (bin[startIndex] == 0x30
-                    && bin[startIndex + 1] == 0x0D
-                    && bin[startIndex + 2] == 0x0A
-                    && bin[startIndex + 3] == 0x0D
-                    && bin[startIndex + 4] == 0x0A)
+            int contentLength = 0, i = startIndex;
+            for (int temp = bin[i]; temp != 0x0D && i < length; temp = bin[++i])
             {
-                return true;
-            }
-            else
-            {
-                int contentLength = 0;
-                int i = startIndex;
-                for (int temp = bin[i]; temp != 0x0D && i < length; temp = bin[++i])
+                if (i >= length - 1)
                 {
-                    if (i >= length - 1)
-                    {
-                        return false;
-                    }
-                    contentLength = contentLength * 16 + (temp > 0x40 ? (temp > 0x60 ? temp - 0x60 : temp - 0x40) + 9 : temp - 0x30);
+                    return false;
                 }
-                package._chunkedNextBlockOffset = i + 4 + contentLength;
-                return ValidateChunkedBlock(package);
+                contentLength = contentLength * 16 + (temp > 0x40 ? (temp > 0x60 ? temp - 0x60 : temp - 0x40) + 9 : temp - 0x30);
             }
+            package._chunkedNextBlockOffset = i + 4 + contentLength;
+            return contentLength == 0 || ValidateChunkedBlock(package);
         }
     }
 }

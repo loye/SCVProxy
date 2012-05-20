@@ -4,29 +4,33 @@ using System.Net.Sockets;
 
 namespace SCVProxy
 {
-    public class Listener
+    public class Listener<T> where T : IMiner, new()
     {
+        //private static int requestCount = 0;
+
+        //private static object locker = new object();
+
         private TcpListener tcpListener;
 
         private IMiner miner;
 
-        public IPEndPoint Proxy { get; set; }
+        public IPEndPoint ProxyEndPoint { get; set; }
 
         public Listener(string ip, int port)
         {
             tcpListener = new TcpListener(IPAddress.Parse(ip), port);
-            miner = new LocalMiner();
+            miner = new T();
         }
 
         public Listener(string ip, int port, string proxyIp, int proxyPort)
             : this(ip, port)
         {
-            this.Proxy = new IPEndPoint(IPAddress.Parse(proxyIp), proxyPort);
+            this.ProxyEndPoint = new IPEndPoint(IPAddress.Parse(proxyIp), proxyPort);
         }
 
         public void Start()
         {
-            this.tcpListener.Start(100);
+            this.tcpListener.Start(50);
             this.tcpListener.BeginAcceptTcpClient(new AsyncCallback(DoAccept), tcpListener);
         }
 
@@ -39,21 +43,30 @@ namespace SCVProxy
                 using (NetworkStream stream = client.GetStream())
                 {
                     HttpPackage request = HttpPackage.Read(stream);
-                    Console.WriteLine(string.Format("{0}[{1}={2}+{3}]",
-                        request.StartLine,
-                        request.Length,
-                        request.ContentOffset,
-                        request.ContentLength));
-                    DateTime startTime = DateTime.Now;
-                    HttpPackage response = this.miner.Fech(request, this.Proxy);
-                    if (response != null)
+                    if (request != null)
                     {
-                        Console.WriteLine(string.Format("{0}[{1}]", response.StartLine, (DateTime.Now - startTime)));
-                        stream.Write(response.Binary, 0, response.Length);
-                    }
-                    else
-                    {
-                        Console.WriteLine("NULL ERROR:#########################################\r\n" + request.Header);
+                        //lock (locker) requestCount++;
+                        Console.WriteLine(request.StartLine); HttpPackage response;
+                        try
+                        {
+                            response = this.miner.Fech(request, this.ProxyEndPoint);
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine(request.StartLine);
+                            throw;
+                        }
+                        //lock (locker) Console.WriteLine(--requestCount);
+                        if (response != null)
+                        {
+                            stream.Write(response.Binary, 0, response.Length);
+                            Console.WriteLine(response.Header);
+                            //Connection: keep-alive
+                        }
+                        else
+                        {
+                            Console.WriteLine("NULL ERROR:#########################################\r\n" + request.Header);
+                        }
                     }
                 }
             }

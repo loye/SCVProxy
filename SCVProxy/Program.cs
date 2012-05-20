@@ -14,8 +14,7 @@ namespace SCVProxy
             Regex HEADER_REGEX = new Regex(
                 @"(?:^(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|^(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
                 RegexOptions.Compiled);
-            string src1 = @"
-GET http://clients2.google.com/service HTTP/1.1
+            string src1 = @"GET http://clients2.google.com/service HTTP/1.1
 Host: clients2.google.com
 Connection: keep-alive
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.168 Safari/535.19
@@ -37,28 +36,17 @@ Vary: Accept-Encoding
 Connection: Transfer-Encoding
 
 00000CE2";
+            //            Console.WriteLine(HEADER_REGEX.IsMatch(src1));
+            //            Console.WriteLine(HEADER_REGEX.IsMatch(src2));
+            //            var result1 = HEADER_REGEX.Match(src1);
+            //            var result2 = HEADER_REGEX.Match(src2);
+            //            Console.WriteLine(result1.Groups["host"].Value);
+            //            Console.WriteLine(result2.Groups["host"].Value);
 
-            //var result1 = HEADER_REGEX.Match(src1);
-            //var result2 = HEADER_REGEX.Match(src2);
-            //Console.WriteLine(result1.Captures[0].Value);
-            //Console.WriteLine(result1.Groups["request"].Value);
-            //Console.WriteLine(result1.Groups["response"].Value);
-            //Console.WriteLine(result2.Success);
 
-            //new Listener("127.0.0.1", 1002).Start();
-            new Listener("127.0.0.1", 1002, "127.0.0.1", 8888).Start();
-
-            //Console.WriteLine(0x30 == '0');
-
-            //MemoryStream mem = new MemoryStream();
-            //byte[] t1 = ASCIIEncoding.ASCII.GetBytes("abcdABCD");
-            //mem.Write(t1, 0, t1.Length);
-
-            //byte[] t2 = new byte[16];
-
-            //Console.WriteLine(mem.Position);
-
-            //Console.WriteLine(string.Format("[{0}]", (DateTime.Now-DateTime.Parse("2012-5-15"))));
+            //new Listener("127.0.0.1", 1000).Start();
+            new Listener<CSWebMiner>("127.0.0.1", 1000, "127.0.0.1", 8888).Start();
+            //new Listener<LocalMiner>("127.0.0.1", 1000, "127.0.0.1", 8888).Start();
 
             while (true)
             {
