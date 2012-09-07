@@ -11,6 +11,7 @@ namespace SCVProxy
     {
         static void Main(string[] args)
         {
+/*
             Regex HEADER_REGEX = new Regex(
                 @"(?:^(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|^(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
                 RegexOptions.Compiled);
@@ -36,6 +37,7 @@ Vary: Accept-Encoding
 Connection: Transfer-Encoding
 
 00000CE2";
+*/
             //            Console.WriteLine(HEADER_REGEX.IsMatch(src1));
             //            Console.WriteLine(HEADER_REGEX.IsMatch(src2));
             //            var result1 = HEADER_REGEX.Match(src1);
@@ -44,9 +46,9 @@ Connection: Transfer-Encoding
             //            Console.WriteLine(result2.Groups["host"].Value);
 
 
-            //new Listener("127.0.0.1", 1000).Start();
-            new Listener<CSWebMiner>("127.0.0.1", 1000, "127.0.0.1", 8888).Start();
-            //new Listener<LocalMiner>("127.0.0.1", 1000, "127.0.0.1", 8888).Start();
+            //new Listener<LocalMiner>("127.0.0.1", 1000).Start();
+            new Listener<LocalMiner>("127.0.0.1", 1000, "127.0.0.1", 8888).Start();
+            //new Listener<CSWebMiner>("127.0.0.1", 1000, "127.0.0.1", 8888).Start();
 
             while (true)
             {
