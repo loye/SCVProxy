@@ -84,9 +84,7 @@ namespace SCVProxy
             byte[] buffer = new byte[BUFFER_LENGTH];
             using (MemoryStream mem = new MemoryStream())
             {
-                for (int len = stream.Read(buffer, 0, buffer.Length);
-                    len > 0;
-                    len = stream.Read(buffer, 0, buffer.Length))
+                for (int len = stream.Read(buffer, 0, buffer.Length); len > 0; len = stream.Read(buffer, 0, buffer.Length))
                 {
                     mem.Write(buffer, 0, len);
                     byte[] bin = mem.GetBuffer();
@@ -125,7 +123,7 @@ namespace SCVProxy
                 }
                 else
                 {
-                    Console.WriteLine("NOT MATCH:########################################\r\n" + str);
+                    Logger.Info("NOT MATCH:########################################\r\n" + str, ConsoleColor.Green);
                 }
             }
             if (package != null)
@@ -142,7 +140,7 @@ namespace SCVProxy
                 }
                 else // Transfer-Encoding: chunked
                 {
-                    Console.WriteLine("Transfer-Encoding: chunked");
+                    Logger.Info("Transfer-Encoding: chunked", ConsoleColor.Green);
                     isValid = ValidateChunkedBlock(package);
                     if (isValid)
                     {

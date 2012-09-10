@@ -10,7 +10,10 @@ namespace SCVProxy
 
         static Logger()
         {
+            Console.Title = "SCVProxy";
             Console.ForegroundColor = ConsoleColor.Black;
+            Console.BufferWidth = 120;
+            Console.BufferHeight = 5000;
         }
 
         public static void Message(string message, int level = 0, ConsoleColor color = ConsoleColor.Gray)
@@ -53,13 +56,11 @@ namespace SCVProxy
                 level = 2;
             }
             Message(string.Format("{0}{1}\n{2}\n", message, ex.GetType(), exMessage), level, color);
-
             // Publish inner exception
             if (ex.InnerException != null)
             {
                 PublishException(ex.InnerException, "Inner Exception:");
             }
         }
-
     }
 }
