@@ -1,6 +1,11 @@
 ﻿using System;
+using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace SCVProxy
@@ -36,11 +41,11 @@ namespace SCVProxy
         {
             StringBuilder sb = new StringBuilder()
                 .AppendLine("------------------------------------------------------------")
-                .AppendFormat("Listen Address\t:\t{0}\n", this.tcpListener.LocalEndpoint.ToString())
+                .AppendFormat("Listen Address\t:\t{0}\n", this.tcpListener.LocalEndpoint)
                 .AppendFormat("Miner Type\t:\t{0}\n", this.miner.GetType().Name);
             if (this.ProxyEndPoint != null)
             {
-                sb.AppendFormat("Proxy Address\t:\t{0}\n", this.ProxyEndPoint.ToString());
+                sb.AppendFormat("Proxy Address\t:\t{0}\n", this.ProxyEndPoint);
             }
             sb.AppendLine("------------------------------------------------------------");
             return sb.ToString();
@@ -52,35 +57,73 @@ namespace SCVProxy
             tcp.BeginAcceptTcpClient(new AsyncCallback(DoAccept), tcp);
 
             using (TcpClient client = tcp.EndAcceptTcpClient(ar))
-            using (NetworkStream stream = client.GetStream())
+            using (NetworkStream networkStream = client.GetStream())
             {
-                HttpPackage request = HttpPackage.Read(stream);
-                if (request != null)
+                bool keepAlive = false;
+                string host = null;
+                int port = 0;
+                HttpPackage response = null;
+                Stream stream = networkStream;
+                for (HttpPackage request = HttpPackage.Read(stream); request != null; request = keepAlive ? HttpPackage.Read(stream) : null, keepAlive = false)
                 {
-                    Logger.Message(request.StartLine);
-                    HttpPackage response;
-                    try
+                    Logger.Message(String.Format("[{0}] {1}", client.Client.RemoteEndPoint, request.StartLine));
+                    if (keepAlive)
                     {
-                        response = this.miner.Fech(request, this.ProxyEndPoint);
+                        request.Host = host;
+                        request.Port = port;
                     }
-                    catch (Exception) //TODO: to be removed
+                    if (request.HttpMethod == "CONNECT")
                     {
-                        Logger.Error(request.StartLine);
-                        throw;
-                    }
-
-                    if (response != null)
-                    {
-                        stream.Write(response.Binary, 0, response.Length);
-                        Logger.Message(response.Header);
-                        //Connection: keep-alive
+                        stream = GetSslStream(stream, request);
+                        keepAlive = true;
                     }
                     else
                     {
-                        Logger.Error("NULL ERROR:#########################################\r\n" + request.Header);
+                        try
+                        {
+                            response = this.miner.Fech(request, this.ProxyEndPoint);
+                        }
+                        catch (Exception ex) //TODO: to be removed
+                        {
+                            Logger.PublishException(ex, request.StartLine);
+                        }
+
+                        if (response != null)
+                        {
+                            stream.Write(response.Binary, 0, response.Length);
+                            Logger.Message(response.StartLine);
+                            // Proxy-Connection: keep-alive
+                            keepAlive = (request.HeaderItems.ContainsKey("Proxy-Connection")
+                                && request.HeaderItems["Proxy-Connection"] == "keep-alive")
+                                && response.HeaderItems.ContainsKey("Connection")
+                                && response.HeaderItems["Connection"] == "Keep-Alive";
+                        }
+                        else
+                        {
+                            Logger.Error("RESPONSE NULL ERROR:#########################################\r\n" + request.Header);
+                        }
+                    }
+                    if (keepAlive)
+                    {
+                        host = request.Host;
+                        port = request.Port;
                     }
                 }
+                stream.Close();
             }
+        }
+
+        private SslStream GetSslStream(Stream stream, HttpPackage request)
+        {
+            byte[] repBin = ASCIIEncoding.ASCII.GetBytes(String.Format("{0} 200 Connection Established\r\nConnection: close\r\n\r\n", request.Version));
+            stream.Write(repBin, 0, repBin.Length);
+
+            X509Certificate2 cert = new X509Certificate2(@".\CA\Certs\github.com.pfx");
+
+            SslStream sslStream = new SslStream(stream, false);
+            sslStream.AuthenticateAsServer(cert, false, SslProtocols.Tls, true);
+
+            return sslStream;
         }
     }
 }

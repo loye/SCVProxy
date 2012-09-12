@@ -25,6 +25,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -60,8 +61,18 @@
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="CA\Certs\github.com.crt" />
+    <None Include="CA\Certs\github.com.key" />
+    <None Include="CA\Certs\github.com.pem" />
+    <None Include="CA\Certs\github.com.pfx" />
+    <None Include="CA\Root\LoyeCA.crt" />
+    <None Include="CA\Root\LoyeCA.key" />
+    <None Include="CA\Root\LoyeCA.pwd" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>xcopy ..\..\CA\*.* .\CA /E /I /Y</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

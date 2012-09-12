@@ -11,34 +11,34 @@ namespace SCVProxy
     {
         static void Main(string[] args)
         {
-/*
+
             Regex HEADER_REGEX = new Regex(
-                @"(?:^(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|^(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
-                RegexOptions.Compiled);
-            string src1 = @"GET http://clients2.google.com/service HTTP/1.1
-Host: clients2.google.com
+@"(?:^(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)?(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|^(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
+RegexOptions.Compiled);
+            string src1 = @"GET / HTTP/1.1
+Host: github.com
 Connection: keep-alive
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.168 Safari/535.19
+Cache-Control: max-age=0
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.89 Safari/537.1
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
 Accept-Encoding: gzip,deflate,sdch
 Accept-Language: en-US,zh-CN;q=0.8,en;q=0.6
 Accept-Charset: GBK,utf-8;q=0.7,*;q=0.3
+Cookie: tracker=direct; _gauges_unique_month=1; _gauges_unique_year=1; _gauges_unique=1; _gauges_unique_day=1; _gh_sess=BAh7BzoPc2Vzc2lvbl9pZCIlNDNmYTFmOTk0YTA1NTE0ZDJhZjIwMmE5YmIwZTc2YjI6EF9jc3JmX3Rva2VuIjFwNlk1OXZ0M211MUduNEdWY2liRmFBY1MrblJWNXpTbnIwblBSbStycG8wPQ%3D%3D--4f9d9f723dafc89adb4bd62112d997c5e3c36b2d; __utma=1.727679668.1347343532.1347429896.1347432712.5; __utmc=1; __utmz=1.1347343532.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)
 
 ";
-            string src2 = @"HTTP/1.1 200 OK
-Cache-Control: private, max-age=0
-Content-Type: text/html; charset=utf-8
-Content-Encoding: gzip
-Expires: Sun, 13 May 2012 09:05:50 GMT
-P3P: CP=""NON UNI COM NAV STA LOC CURa DEVa PSAa PSDa OUR IND""
-Date: Sun, 13 May 2012 09:06:50 GMT
-Transfer-Encoding: chunked
-Connection: keep-alive
-Vary: Accept-Encoding
-Connection: Transfer-Encoding
+            //Console.WriteLine(
+            //HEADER_REGEX.Replace(src1, m => {
+            //    m.Groups["url"].
+            //    return null;
+            //}));
 
-00000CE2";
-*/
-            //            Console.WriteLine(HEADER_REGEX.IsMatch(src1));
+            //var match = HEADER_REGEX.Match(src1);
+            //Console.WriteLine(match.Success);
+            //Console.WriteLine(match.Groups["url"].Value);
+            //Console.WriteLine(match.Groups["host"].Value);
+            //Console.WriteLine(match.Groups["port"].Value);
+
             //            Console.WriteLine(HEADER_REGEX.IsMatch(src2));
             //            var result1 = HEADER_REGEX.Match(src1);
             //            var result2 = HEADER_REGEX.Match(src2);
@@ -54,7 +54,8 @@ Connection: Transfer-Encoding
             {
                 if (Console.ReadKey().Key == ConsoleKey.T)
                 {
-                    Console.WriteLine(System.Diagnostics.Process.GetCurrentProcess().Threads.Count);
+                    Console.WriteLine();
+                    Console.WriteLine("Threads:" + System.Diagnostics.Process.GetCurrentProcess().Threads.Count);
                 }
             }
         }

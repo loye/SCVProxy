@@ -11,18 +11,18 @@ namespace SCVProxy
         private const int BUFFER_LENGTH = 4096;
 
         private static readonly Regex HEADER_REGEX = new Regex(
-            @"(?:^(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|^(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
+            @"(?:^(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)?(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|^(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
             RegexOptions.Compiled);
 
         private int _chunkedNextBlockOffset;
 
+        public string Host { get; set; }
+
+        public int Port { get; set; }
+
         public string HttpMethod { get; private set; }
 
         public string Url { get; private set; }
-
-        public string Host { get; private set; }
-
-        public int Port { get; private set; }
 
         public string Version { get; private set; }
 
@@ -70,6 +70,10 @@ namespace SCVProxy
                 headerItems[keyGroup.Captures[i].Value] = valueGroup.Captures[i].Value;
             }
             this.HeaderItems = headerItems;
+            if (headerItems.ContainsKey("Host"))
+            {
+                this.Host = headerItems["Host"];
+            }
             this.Header = match.Captures[0].Value;
             this.ContentOffset = this.Header.Length;
             this.ContentLength = headerItems.ContainsKey("Content-Length")
