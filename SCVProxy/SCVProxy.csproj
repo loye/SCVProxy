@@ -42,6 +42,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -50,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helper.cs" />
     <Compile Include="HttpPackage.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Miner.cs" />
@@ -63,11 +65,14 @@
     </None>
     <None Include="CA\Certs\github.com.crt" />
     <None Include="CA\Certs\github.com.key" />
-    <None Include="CA\Certs\github.com.pem" />
     <None Include="CA\Certs\github.com.pfx" />
     <None Include="CA\Root\LoyeCA.crt" />
     <None Include="CA\Root\LoyeCA.key" />
+    <None Include="CA\Root\LoyeCA.pfx" />
     <None Include="CA\Root\LoyeCA.pwd" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="CA\makecert.exe" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

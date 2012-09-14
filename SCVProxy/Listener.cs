@@ -62,19 +62,22 @@ namespace SCVProxy
                 bool keepAlive = false;
                 string host = null;
                 int port = 0;
+                bool isSsl = false;
                 HttpPackage response = null;
                 Stream stream = networkStream;
                 for (HttpPackage request = HttpPackage.Read(stream); request != null; request = keepAlive ? HttpPackage.Read(stream) : null, keepAlive = false)
                 {
-                    Logger.Message(String.Format("[{0}] {1}", client.Client.RemoteEndPoint, request.StartLine));
-                    if (keepAlive)
+                    Logger.Message(String.Format("[{0}] {1}", client.Client.RemoteEndPoint, request.Header));
+                    if (isSsl)
                     {
                         request.Host = host;
                         request.Port = port;
+                        request.IsSsl = isSsl;
                     }
                     if (request.HttpMethod == "CONNECT")
                     {
                         stream = GetSslStream(stream, request);
+                        isSsl = true;
                         keepAlive = true;
                     }
                     else
@@ -109,20 +112,24 @@ namespace SCVProxy
                         port = request.Port;
                     }
                 }
-                stream.Close();
+                if (stream != null)
+                {
+                    stream.Dispose();
+                }
             }
         }
 
         private SslStream GetSslStream(Stream stream, HttpPackage request)
         {
+            SslStream sslStream = null;
             byte[] repBin = ASCIIEncoding.ASCII.GetBytes(String.Format("{0} 200 Connection Established\r\nConnection: close\r\n\r\n", request.Version));
             stream.Write(repBin, 0, repBin.Length);
-
-            X509Certificate2 cert = new X509Certificate2(@".\CA\Certs\github.com.pfx");
-
-            SslStream sslStream = new SslStream(stream, false);
-            sslStream.AuthenticateAsServer(cert, false, SslProtocols.Tls, true);
-
+            X509Certificate2 cert = Helper.GetCertificate(request.Host);
+            if (cert != null && cert.HasPrivateKey)
+            {
+                sslStream = new SslStream(stream, false);
+                sslStream.AuthenticateAsServer(cert, false, SslProtocols.Tls, true);
+            }
             return sslStream;
         }
     }

@@ -27,11 +27,7 @@ Accept-Charset: GBK,utf-8;q=0.7,*;q=0.3
 Cookie: tracker=direct; _gauges_unique_month=1; _gauges_unique_year=1; _gauges_unique=1; _gauges_unique_day=1; _gh_sess=BAh7BzoPc2Vzc2lvbl9pZCIlNDNmYTFmOTk0YTA1NTE0ZDJhZjIwMmE5YmIwZTc2YjI6EF9jc3JmX3Rva2VuIjFwNlk1OXZ0M211MUduNEdWY2liRmFBY1MrblJWNXpTbnIwblBSbStycG8wPQ%3D%3D--4f9d9f723dafc89adb4bd62112d997c5e3c36b2d; __utma=1.727679668.1347343532.1347429896.1347432712.5; __utmc=1; __utmz=1.1347343532.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)
 
 ";
-            //Console.WriteLine(
-            //HEADER_REGEX.Replace(src1, m => {
-            //    m.Groups["url"].
-            //    return null;
-            //}));
+
 
             //var match = HEADER_REGEX.Match(src1);
             //Console.WriteLine(match.Success);

@@ -16,6 +16,7 @@ namespace SCVProxy
 
         private int _chunkedNextBlockOffset;
 
+
         public string Host { get; set; }
 
         public int Port { get; set; }
@@ -44,6 +45,9 @@ namespace SCVProxy
 
         public int ContentLength { get; private set; }
 
+        public bool IsSsl { get; set; }
+
+
         private HttpPackage(Match match)
         {
             if (match.Groups["request"].Success)
@@ -70,7 +74,7 @@ namespace SCVProxy
                 headerItems[keyGroup.Captures[i].Value] = valueGroup.Captures[i].Value;
             }
             this.HeaderItems = headerItems;
-            if (headerItems.ContainsKey("Host"))
+            if (String.IsNullOrEmpty(this.Host) && headerItems.ContainsKey("Host"))
             {
                 this.Host = headerItems["Host"];
             }
@@ -82,8 +86,13 @@ namespace SCVProxy
             this._chunkedNextBlockOffset = this.ContentOffset;
         }
 
+
         public static HttpPackage Read(Stream stream)
         {
+            if (stream == null || !stream.CanRead)
+            {
+                return null;
+            }
             HttpPackage package = null;
             byte[] buffer = new byte[BUFFER_LENGTH];
             using (MemoryStream mem = new MemoryStream())
@@ -96,7 +105,8 @@ namespace SCVProxy
                     {
                         if (package.ContentLength == 0
                             && package.HeaderItems.ContainsKey("Connection")
-                            && package.HeaderItems["Connection"] == "close") // Connection: close
+                            && package.HeaderItems["Connection"] == "close"
+                            && !package.StartLine.Contains("Connection Established")) // Connection: close
                         {
                             continue;
                         }

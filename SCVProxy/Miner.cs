@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Text;
 
 namespace SCVProxy
 {
@@ -18,12 +20,42 @@ namespace SCVProxy
             using (Socket socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
             {
                 socket.Connect(endPoint);
-                using (NetworkStream stream = new NetworkStream(socket))
+                using (NetworkStream networkStream = new NetworkStream(socket))
                 {
+                    Stream stream = networkStream;
+                    if (request.IsSsl)
+                    {
+                        stream = GetSslStream(stream, request);
+                        if (stream == null)
+                        {
+                            return null;
+                        }
+                    }
                     stream.Write(request.Binary, 0, request.Length);
-                    return HttpPackage.Read(stream);
+                    HttpPackage response = HttpPackage.Read(stream);
+                    stream.Close();
+                    return response;
                 }
             }
+        }
+
+        private SslStream GetSslStream(Stream stream, HttpPackage request)
+        {
+            SslStream ssltream = null;
+            byte[] reqBin = ASCIIEncoding.ASCII.GetBytes(
+                String.Format("CONNECT {0}:{1} {2}\r\nHost: {0}\r\nConnection: keep-alive\r\n{3}\r\n",
+                    request.Host,
+                    request.Port,
+                    request.Version,
+                    request.HeaderItems.ContainsKey("User-Agent") ? String.Format("User-Agent: {0}\r\n", request.HeaderItems["User-Agent"]) : String.Empty));
+            stream.Write(reqBin, 0, reqBin.Length);
+            HttpPackage response = HttpPackage.Read(stream);
+            if (response != null && response.StatusCode == 200)
+            {
+                ssltream = new SslStream(stream, false);
+                ssltream.AuthenticateAsClient(request.Host);
+            }
+            return ssltream;
         }
     }
 
