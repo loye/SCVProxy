@@ -42,9 +42,10 @@ Cookie: tracker=direct; _gauges_unique_month=1; _gauges_unique_year=1; _gauges_u
             //            Console.WriteLine(result2.Groups["host"].Value);
 
 
-            //new Listener<LocalMiner>("127.0.0.1", 1000).Start();
-            new Listener<LocalMiner>("127.0.0.1", 1000, "127.0.0.1", 8888).Start();
+            new Listener<LocalMiner>("127.0.0.1", 1000).Start();
+            //new Listener<LocalMiner>("127.0.0.1", 1000, "127.0.0.1", 8888).Start();
             //new Listener<CSWebMiner>("127.0.0.1", 1000, "127.0.0.1", 8888).Start();
+
 
             while (true)
             {

@@ -67,7 +67,7 @@ namespace SCVProxy
                 Stream stream = networkStream;
                 for (HttpPackage request = HttpPackage.Read(stream); request != null; request = keepAlive ? HttpPackage.Read(stream) : null, keepAlive = false)
                 {
-                    Logger.Message(String.Format("[{0}] {1}", client.Client.RemoteEndPoint, request.Header));
+                    Logger.Message(String.Format("[{0}] {1}", client.Client.RemoteEndPoint, request.StartLine));
                     if (isSsl)
                     {
                         request.Host = host;
@@ -76,7 +76,14 @@ namespace SCVProxy
                     }
                     if (request.HttpMethod == "CONNECT")
                     {
-                        stream = GetSslStream(stream, request);
+                        try
+                        {
+                            stream = GetSslStream(stream, request);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.PublishException(ex, request.StartLine);
+                        }
                         isSsl = true;
                         keepAlive = true;
                     }
@@ -124,7 +131,7 @@ namespace SCVProxy
             SslStream sslStream = null;
             byte[] repBin = ASCIIEncoding.ASCII.GetBytes(String.Format("{0} 200 Connection Established\r\nConnection: close\r\n\r\n", request.Version));
             stream.Write(repBin, 0, repBin.Length);
-            X509Certificate2 cert = Helper.GetCertificate(request.Host);
+            X509Certificate2 cert = CAHelper.GetCertificate(request.Host);
             if (cert != null && cert.HasPrivateKey)
             {
                 sslStream = new SslStream(stream, false);

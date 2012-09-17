@@ -97,21 +97,28 @@ namespace SCVProxy
             byte[] buffer = new byte[BUFFER_LENGTH];
             using (MemoryStream mem = new MemoryStream())
             {
-                for (int len = stream.Read(buffer, 0, buffer.Length); len > 0; len = stream.Read(buffer, 0, buffer.Length))
+                try
                 {
-                    mem.Write(buffer, 0, len);
-                    byte[] bin = mem.GetBuffer();
-                    if (ValidatePackage(bin, (int)mem.Length, ref package))
+                    for (int len = stream.Read(buffer, 0, buffer.Length); len > 0; len = stream.Read(buffer, 0, buffer.Length))
                     {
-                        if (package.ContentLength == 0
-                            && package.HeaderItems.ContainsKey("Connection")
-                            && package.HeaderItems["Connection"] == "close"
-                            && !package.StartLine.Contains("Connection Established")) // Connection: close
+                        mem.Write(buffer, 0, len);
+                        byte[] bin = mem.GetBuffer();
+                        if (ValidatePackage(bin, (int)mem.Length, ref package))
                         {
-                            continue;
+                            if (package.ContentLength == 0
+                                && package.HeaderItems.ContainsKey("Connection")
+                                && package.HeaderItems["Connection"] == "close"
+                                && !package.StartLine.Contains("Connection Established")) // Connection: close
+                            {
+                                continue;
+                            }
+                            break;
                         }
-                        break;
                     }
+                }
+                catch (Exception ex)
+                {
+                    Logger.PublishException(ex, "Exception Throw from HttpPackage.Read");
                 }
             }
             return package;
@@ -134,10 +141,6 @@ namespace SCVProxy
                 if (match.Success)
                 {
                     package = new HttpPackage(match);
-                }
-                else
-                {
-                    Logger.Info("NOT MATCH:########################################\r\n" + str, ConsoleColor.Green);
                 }
             }
             if (package != null)

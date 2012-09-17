@@ -51,7 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Helper.cs" />
+    <Compile Include="CAHelper.cs" />
     <Compile Include="HttpPackage.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Miner.cs" />

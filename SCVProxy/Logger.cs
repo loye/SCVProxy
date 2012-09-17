@@ -12,7 +12,6 @@ namespace SCVProxy
         {
             Console.Title = "SCVProxy";
             Console.ForegroundColor = ConsoleColor.Black;
-            Console.BufferWidth = 120;
             Console.BufferHeight = 5000;
         }
 

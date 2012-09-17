@@ -25,7 +25,7 @@ namespace SCVProxy
                     Stream stream = networkStream;
                     if (request.IsSsl)
                     {
-                        stream = GetSslStream(stream, request);
+                        stream = GetSslStream(stream, request, endPoint);
                         if (stream == null)
                         {
                             return null;
@@ -39,22 +39,22 @@ namespace SCVProxy
             }
         }
 
-        private SslStream GetSslStream(Stream stream, HttpPackage request)
+        private SslStream GetSslStream(Stream stream, HttpPackage request, IPEndPoint endPoint)
         {
             SslStream ssltream = null;
-            byte[] reqBin = ASCIIEncoding.ASCII.GetBytes(
-                String.Format("CONNECT {0}:{1} {2}\r\nHost: {0}\r\nConnection: keep-alive\r\n{3}\r\n",
+            string reqStr = String.Format("CONNECT {0}:{1} {2}\r\nHost: {0}\r\nConnection: keep-alive\r\n{3}\r\n",
                     request.Host,
                     request.Port,
                     request.Version,
-                    request.HeaderItems.ContainsKey("User-Agent") ? String.Format("User-Agent: {0}\r\n", request.HeaderItems["User-Agent"]) : String.Empty));
-            stream.Write(reqBin, 0, reqBin.Length);
-            HttpPackage response = HttpPackage.Read(stream);
-            if (response != null && response.StatusCode == 200)
-            {
-                ssltream = new SslStream(stream, false);
-                ssltream.AuthenticateAsClient(request.Host);
-            }
+                    request.HeaderItems.ContainsKey("User-Agent") ? String.Format("User-Agent: {0}\r\n", request.HeaderItems["User-Agent"]) : String.Empty);
+            byte[] reqBin = ASCIIEncoding.ASCII.GetBytes(reqStr);
+            //HttpPackage response = HttpPackage.Read(stream);
+            //Socket socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            //socket.Connect(endPoint);
+            //ssltream = new SslStream(new NetworkStream(socket), false);
+            ssltream = new SslStream(stream, true);
+            ssltream.AuthenticateAsClient(request.Host);
+            //stream.Write(reqBin, 0, reqBin.Length);
             return ssltream;
         }
     }
