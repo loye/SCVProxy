@@ -78,7 +78,7 @@ namespace SCVProxy
                     {
                         try
                         {
-                            stream = GetSslStream(stream, request);
+                            stream = SwitchToSslStream(stream, request);
                         }
                         catch (Exception ex)
                         {
@@ -126,10 +126,10 @@ namespace SCVProxy
             }
         }
 
-        private SslStream GetSslStream(Stream stream, HttpPackage request)
+        private SslStream SwitchToSslStream(Stream stream, HttpPackage request)
         {
             SslStream sslStream = null;
-            byte[] repBin = ASCIIEncoding.ASCII.GetBytes(String.Format("{0} 200 Connection Established\r\nConnection: close\r\n\r\n", request.Version));
+            byte[] repBin = ASCIIEncoding.ASCII.GetBytes(String.Format("{0} 200 Connection Established\r\n\r\n", request.Version));
             stream.Write(repBin, 0, repBin.Length);
             X509Certificate2 cert = CAHelper.GetCertificate(request.Host);
             if (cert != null && cert.HasPrivateKey)

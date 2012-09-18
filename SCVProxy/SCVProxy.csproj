@@ -63,20 +63,13 @@
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="CA\Certs\github.com.crt" />
-    <None Include="CA\Certs\github.com.key" />
-    <None Include="CA\Certs\github.com.pfx" />
-    <None Include="CA\Root\LoyeCA.crt" />
-    <None Include="CA\Root\LoyeCA.key" />
-    <None Include="CA\Root\LoyeCA.pfx" />
-    <None Include="CA\Root\LoyeCA.pwd" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="CA\makecert.exe" />
+    <Content Include="makecert.exe" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy ..\..\CA\*.* .\CA /E /I /Y</PostBuildEvent>
+    <PostBuildEvent>copy ..\..\makecert.exe .\ /Y</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

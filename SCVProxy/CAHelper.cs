@@ -119,6 +119,5 @@ namespace SCVProxy
             }
             return cert;
         }
-
     }
 }
