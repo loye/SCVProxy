@@ -45,7 +45,7 @@ namespace SCVProxy
 
         public int ContentLength { get; private set; }
 
-        public bool IsSsl { get; set; }
+        public bool IsSSL { get; set; }
 
 
         private HttpPackage(Match match)

@@ -74,7 +74,7 @@ namespace SCVProxy
                         {
                             request.Host = host;
                             request.Port = port;
-                            request.IsSsl = true;
+                            request.IsSSL = true;
                         }
                         if (request.HttpMethod == "CONNECT")
                         {
@@ -100,14 +100,15 @@ namespace SCVProxy
                         DateTime endTime = DateTime.Now;
                         Logger.Message(
                             String.Format(
-                                "[{0}] [{1}]\n{2}{3}",
+                                "[{0}] [{1}] [{2}:{3}]\n{4}{5}",
                                 startTime.ToString("HH:mm:ss.fff"),
                                 client.Client.RemoteEndPoint,
+                                request.Host,
+                                request.Port,
                                 request.StartLine,
                                 response == null
                                     ? null
-                                    : String.Format("[{0}] [{1}]\n{2}",
-                                        endTime.ToString("HH:mm:ss.fff"),
+                                    : String.Format("\n[{0}] {1}",
                                         (endTime - startTime).ToString(),
                                         response.StartLine)),
                             0,
@@ -116,7 +117,7 @@ namespace SCVProxy
                 }
                 catch (Exception ex)
                 {
-                    Logger.PublishException(ex, request != null ? request.StartLine : null);
+                    Logger.PublishException(ex, request != null ? String.Format("{0}:{1}\n{2}", request.Host, request.Port, request.StartLine) : null);
                 }
                 finally
                 {

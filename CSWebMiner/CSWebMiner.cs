@@ -26,6 +26,7 @@ namespace SCVProxy.CSWebMiner
             }
             else if (request.HttpMethod == "POST")
             {
+                bool isSSL = !String.IsNullOrEmpty(request.Headers["SCV-SSL"]) && bool.Parse(request.Headers["SCV-SSL"]);
                 string host = request.Headers["SCV-Host"];
                 int port = int.Parse(request.Headers["SCV-Port"]);
                 IPAddress ip = String.IsNullOrEmpty(request.Headers["SCV-IP"]) ? Dns.GetHostAddresses(host)[0] : IPAddress.Parse(request.Headers["SCV-IP"]);
@@ -38,6 +39,7 @@ namespace SCVProxy.CSWebMiner
 
                 IPEndPoint endPoint = new IPEndPoint(ip, port);
                 HttpPackage requestPackage = HttpPackage.Read(buffer);
+                requestPackage.IsSSL = isSSL;
                 HttpPackage responsePackage = miner.Fech(requestPackage, endPoint);
 
                 response.Headers["SCV-Length"] = responsePackage.Length.ToString();

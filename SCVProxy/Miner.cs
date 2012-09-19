@@ -24,7 +24,7 @@ namespace SCVProxy
                 using (NetworkStream networkStream = new NetworkStream(socket))
                 {
                     Stream stream = networkStream;
-                    if (request.IsSsl)
+                    if (request.IsSSL)
                     {
                         stream = SwitchToSslStream(stream, request, byProxy);
                         if (stream == null)
@@ -77,6 +77,7 @@ namespace SCVProxy
 
             HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(minerUrl);
             httpWebRequest.Method = "POST";
+            httpWebRequest.Headers["SCV-SSL"] = request.IsSSL.ToString();
             httpWebRequest.Headers["SCV-Host"] = request.Host;
             httpWebRequest.Headers["SCV-Port"] = request.Port.ToString();
             httpWebRequest.Headers["SCV-IP"] = Dns.GetHostAddresses(request.Host).Where(a => a.AddressFamily == AddressFamily.InterNetwork).First().ToString();
