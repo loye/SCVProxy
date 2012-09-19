@@ -74,10 +74,6 @@ namespace SCVProxy
                 headerItems[keyGroup.Captures[i].Value] = valueGroup.Captures[i].Value;
             }
             this.HeaderItems = headerItems;
-            if (String.IsNullOrEmpty(this.Host) && headerItems.ContainsKey("Host"))
-            {
-                this.Host = headerItems["Host"];
-            }
             this.Header = match.Captures[0].Value;
             this.ContentOffset = this.Header.Length;
             this.ContentLength = headerItems.ContainsKey("Content-Length")
@@ -97,28 +93,21 @@ namespace SCVProxy
             byte[] buffer = new byte[BUFFER_LENGTH];
             using (MemoryStream mem = new MemoryStream())
             {
-                try
+                for (int len = stream.Read(buffer, 0, buffer.Length); len > 0; len = stream.Read(buffer, 0, buffer.Length))
                 {
-                    for (int len = stream.Read(buffer, 0, buffer.Length); len > 0; len = stream.Read(buffer, 0, buffer.Length))
+                    mem.Write(buffer, 0, len);
+                    byte[] bin = mem.GetBuffer();
+                    if (ValidatePackage(bin, (int)mem.Length, ref package))
                     {
-                        mem.Write(buffer, 0, len);
-                        byte[] bin = mem.GetBuffer();
-                        if (ValidatePackage(bin, (int)mem.Length, ref package))
+                        if (package.ContentLength == 0
+                            && package.HeaderItems.ContainsKey("Connection")
+                            && package.HeaderItems["Connection"] == "close"
+                            && !package.StartLine.Contains("Connection Established")) // Connection: close
                         {
-                            if (package.ContentLength == 0
-                                && package.HeaderItems.ContainsKey("Connection")
-                                && package.HeaderItems["Connection"] == "close"
-                                && !package.StartLine.Contains("Connection Established")) // Connection: close
-                            {
-                                continue;
-                            }
-                            break;
+                            continue;
                         }
+                        break;
                     }
-                }
-                catch (Exception ex)
-                {
-                    Logger.PublishException(ex, "Exception Throw from HttpPackage.Read");
                 }
             }
             return package;
@@ -157,7 +146,6 @@ namespace SCVProxy
                 }
                 else // Transfer-Encoding: chunked
                 {
-                    Logger.Info("Transfer-Encoding: chunked", ConsoleColor.Green);
                     isValid = ValidateChunkedBlock(package);
                     if (isValid)
                     {

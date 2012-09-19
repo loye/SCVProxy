@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Configuration;
 using System.Diagnostics;
+using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
@@ -74,9 +75,11 @@ namespace SCVProxy
 
         private static X509Certificate2 CreateCertificate(string host, bool isRoot = false)
         {
+            if (String.IsNullOrEmpty(MAKECERT_FILENAME) || !File.Exists(MAKECERT_FILENAME))
+            {
+                return null;
+            }
             X509Certificate2 cert = null;
-            string execute = MAKECERT_FILENAME;
-            string parameters = isRoot ? makeCertParamsRoot : String.Format(makeCertParamsEnd, host);
             if (!isRoot)
             {
                 if (rootCert == null)
@@ -85,11 +88,16 @@ namespace SCVProxy
                     if (rootCert == null)
                     {
                         rootCert = CreateCertificate(makeCertRootDomain, true);
+                        if (rootCert == null)
+                        {
+                            return null;
+                        }
                     }
                 }
             }
-
             int exitCode = 999;
+            string execute = MAKECERT_FILENAME;
+            string parameters = isRoot ? makeCertParamsRoot : String.Format(makeCertParamsEnd, host);
             try
             {
                 caRWLock.EnterWriteLock();
@@ -116,6 +124,7 @@ namespace SCVProxy
             if (exitCode == 0)
             {
                 cert = LoadCertificateFromWindowsStore(host);
+                Logger.Message(String.Format("Create Certification: {0}", cert == null ? "Failed" : cert.Subject), 0, ConsoleColor.DarkYellow);
             }
             return cert;
         }

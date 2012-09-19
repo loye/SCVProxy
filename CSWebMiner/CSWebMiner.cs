@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net;
 using System.Web;
 
@@ -27,6 +28,7 @@ namespace SCVProxy.CSWebMiner
             {
                 string host = request.Headers["SCV-Host"];
                 int port = int.Parse(request.Headers["SCV-Port"]);
+                IPAddress ip = String.IsNullOrEmpty(request.Headers["SCV-IP"]) ? Dns.GetHostAddresses(host)[0] : IPAddress.Parse(request.Headers["SCV-IP"]);
 
                 byte[] buffer = new byte[request.ContentLength];
                 using (Stream stream = request.InputStream)
@@ -34,7 +36,7 @@ namespace SCVProxy.CSWebMiner
                     stream.Read(buffer, 0, buffer.Length);
                 }
 
-                IPEndPoint endPoint = new IPEndPoint(Dns.GetHostAddresses(host)[0], port);
+                IPEndPoint endPoint = new IPEndPoint(ip, port);
                 HttpPackage requestPackage = HttpPackage.Read(buffer);
                 HttpPackage responsePackage = miner.Fech(requestPackage, endPoint);
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -9,14 +10,14 @@ namespace SCVProxy
 {
     public interface IMiner
     {
-        HttpPackage Fech(HttpPackage request, IPEndPoint proxyEndPoint = null);
+        HttpPackage Fech(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false);
     }
 
     public class LocalMiner : IMiner
     {
-        public HttpPackage Fech(HttpPackage request, IPEndPoint proxyEndPoint = null)
+        public HttpPackage Fech(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
         {
-            IPEndPoint remoteEndPoint = proxyEndPoint ?? new IPEndPoint(Dns.GetHostAddresses(request.Host)[0], request.Port);
+            IPEndPoint remoteEndPoint = endPoint ?? new IPEndPoint(Dns.GetHostAddresses(request.Host).Where(a => a.AddressFamily == AddressFamily.InterNetwork).First(), request.Port);
             using (Socket socket = new Socket(remoteEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
             {
                 socket.Connect(remoteEndPoint);
@@ -25,7 +26,7 @@ namespace SCVProxy
                     Stream stream = networkStream;
                     if (request.IsSsl)
                     {
-                        stream = SwitchToSslStream(stream, request, proxyEndPoint != null);
+                        stream = SwitchToSslStream(stream, request, byProxy);
                         if (stream == null)
                         {
                             return null;
@@ -66,25 +67,29 @@ namespace SCVProxy
         }
     }
 
-    public class CSWebMiner : IMiner
+    public class WebMiner : IMiner
     {
-        public HttpPackage Fech(HttpPackage request, IPEndPoint proxyEndPoint = null)
+        public HttpPackage Fech(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
         {
-            string minerUrl = "http://127.0.0.1:88/miner";
-            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(minerUrl);
-            //if (proxyEndPoint != null)
-            //{
-            //    webRequest.Proxy = new WebProxy(proxyEndPoint.Address.ToString() + proxyEndPoint.Port, false);
-            //}
-            webRequest.Headers["SCV-Host"] = request.Host;
-            webRequest.Headers["SCV-Port"] = request.Port.ToString();
-            webRequest.Method = "POST";
-            using (Stream stream = webRequest.GetRequestStream())
+            string minerUrl = "http://localhost:800/miner";
+
+            //byte[] requestBin = ASCIIEncoding.ASCII.GetBytes(Convert.ToBase64String(request.Binary, 0, request.Length));
+
+            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(minerUrl);
+            httpWebRequest.Method = "POST";
+            httpWebRequest.Headers["SCV-Host"] = request.Host;
+            httpWebRequest.Headers["SCV-Port"] = request.Port.ToString();
+            httpWebRequest.Headers["SCV-IP"] = Dns.GetHostAddresses(request.Host).Where(a => a.AddressFamily == AddressFamily.InterNetwork).First().ToString();
+            if (byProxy && endPoint != null)
+            {
+                httpWebRequest.Proxy = new WebProxy(endPoint.Address.ToString() + endPoint.Port, false);
+            }
+            using (Stream stream = httpWebRequest.GetRequestStream())
             {
                 stream.Write(request.Binary, 0, request.Length);
             }
             byte[] buffer;
-            using (WebResponse response = webRequest.GetResponse())
+            using (WebResponse response = httpWebRequest.GetResponse())
             {
                 buffer = new byte[response.ContentLength];
                 using (Stream stream = response.GetResponseStream())
@@ -94,7 +99,6 @@ namespace SCVProxy
                          s += length, l = buffer.Length - s, length = stream.Read(buffer, s, l)) ;
                 }
             }
-            Console.WriteLine(buffer.Length);
             return HttpPackage.Read(buffer);
         }
     }

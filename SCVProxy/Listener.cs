@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -55,75 +54,78 @@ namespace SCVProxy
         {
             TcpListener tcp = (ar.AsyncState as TcpListener);
             tcp.BeginAcceptTcpClient(new AsyncCallback(DoAccept), tcp);
-
             using (TcpClient client = tcp.EndAcceptTcpClient(ar))
             using (NetworkStream networkStream = client.GetStream())
             {
-                bool keepAlive = false;
+                HttpPackage request = null;
+                HttpPackage response = null;
+                bool keepAlive = false, isSsl = false;
                 string host = null;
                 int port = 0;
-                bool isSsl = false;
-                HttpPackage response = null;
                 Stream stream = networkStream;
-                for (HttpPackage request = HttpPackage.Read(stream); request != null; request = keepAlive ? HttpPackage.Read(stream) : null, keepAlive = false)
+                try
                 {
-                    Logger.Message(String.Format("[{0}] {1}", client.Client.RemoteEndPoint, request.StartLine));
-                    if (isSsl)
+                    for (request = HttpPackage.Read(stream);
+                        request != null;
+                        request = keepAlive ? HttpPackage.Read(stream) : null, response = null, keepAlive = false)
                     {
-                        request.Host = host;
-                        request.Port = port;
-                        request.IsSsl = isSsl;
-                    }
-                    if (request.HttpMethod == "CONNECT")
-                    {
-                        try
+                        DateTime startTime = DateTime.Now;
+                        if (isSsl)
+                        {
+                            request.Host = host;
+                            request.Port = port;
+                            request.IsSsl = true;
+                        }
+                        if (request.HttpMethod == "CONNECT")
                         {
                             stream = SwitchToSslStream(stream, request);
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.PublishException(ex, request.StartLine);
-                        }
-                        isSsl = true;
-                        keepAlive = true;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            response = this.miner.Fech(request, this.ProxyEndPoint);
-                        }
-                        catch (Exception ex) //TODO: to be removed
-                        {
-                            Logger.PublishException(ex, request.StartLine);
-                        }
-
-                        if (response != null)
-                        {
-                            stream.Write(response.Binary, 0, response.Length);
-                            Logger.Message(response.StartLine);
-                            // Proxy-Connection: keep-alive
-                            keepAlive = (request.HeaderItems.ContainsKey("Proxy-Connection")
-                                && request.HeaderItems["Proxy-Connection"] == "keep-alive")
-                                && response.HeaderItems.ContainsKey("Connection")
-                                && response.HeaderItems["Connection"] == "Keep-Alive";
+                            isSsl = keepAlive = true;
+                            host = request.Host;
+                            port = request.Port;
                         }
                         else
                         {
-                            Logger.Error("RESPONSE NULL ERROR:#########################################\r\n" + request.Header);
+                            response = this.miner.Fech(request, this.ProxyEndPoint, this.ProxyEndPoint != null);
+                            if (response != null)
+                            {
+                                stream.Write(response.Binary, 0, response.Length);
+                                // Proxy-Connection: keep-alive
+                                keepAlive = (request.HeaderItems.ContainsKey("Proxy-Connection")
+                                    && request.HeaderItems["Proxy-Connection"] == "keep-alive")
+                                    && response.HeaderItems.ContainsKey("Connection")
+                                    && response.HeaderItems["Connection"] == "Keep-Alive";
+                            }
                         }
-                    }
-                    if (keepAlive)
-                    {
-                        host = request.Host;
-                        port = request.Port;
-                    }
+                        // Log Message
+                        DateTime endTime = DateTime.Now;
+                        Logger.Message(
+                            String.Format(
+                                "[{0}] [{1}]\n{2}{3}",
+                                startTime.ToString("HH:mm:ss.fff"),
+                                client.Client.RemoteEndPoint,
+                                request.StartLine,
+                                response == null
+                                    ? null
+                                    : String.Format("[{0}] [{1}]\n{2}",
+                                        endTime.ToString("HH:mm:ss.fff"),
+                                        (endTime - startTime).ToString(),
+                                        response.StartLine)),
+                            0,
+                            (response != null || request.HttpMethod == "CONNECT") ? (isSsl ? ConsoleColor.DarkYellow : ConsoleColor.Gray) : ConsoleColor.Red);
+                    } // end of for
                 }
-                if (stream != null)
+                catch (Exception ex)
                 {
-                    stream.Dispose();
+                    Logger.PublishException(ex, request != null ? request.StartLine : null);
                 }
-            }
+                finally
+                {
+                    if (stream != null)
+                    {
+                        stream.Dispose();
+                    }
+                }
+            } // end of using
         }
 
         private SslStream SwitchToSslStream(Stream stream, HttpPackage request)
