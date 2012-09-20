@@ -77,6 +77,7 @@ namespace SCVProxy
         {
             if (String.IsNullOrEmpty(MAKECERT_FILENAME) || !File.Exists(MAKECERT_FILENAME))
             {
+                Logger.Error("Create Certification: Failed. Can't find makecert.exe");
                 return null;
             }
             X509Certificate2 cert = null;
@@ -124,7 +125,14 @@ namespace SCVProxy
             if (exitCode == 0)
             {
                 cert = LoadCertificateFromWindowsStore(host);
-                Logger.Message(String.Format("Create Certification: {0}", cert == null ? "Failed" : cert.Subject), 0, ConsoleColor.DarkYellow);
+                if (cert == null)
+                {
+                    Logger.Error("Create Certification: Failed.");
+                }
+                else
+                {
+                    Logger.Message(String.Format("Create Certification: {0}", cert.Subject), 0, ConsoleColor.DarkYellow);
+                }
             }
             return cert;
         }

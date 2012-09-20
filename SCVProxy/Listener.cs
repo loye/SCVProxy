@@ -39,14 +39,14 @@ namespace SCVProxy
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder()
-                .AppendLine("------------------------------------------------------------")
+                .AppendLine("----------------------------------------------------------------------")
                 .AppendFormat("Listen Address\t:\t{0}\n", this.tcpListener.LocalEndpoint)
-                .AppendFormat("Miner Type\t:\t{0}\n", this.miner.GetType().Name);
+                .AppendFormat("Miner Type\t:\t{0}\n", this.miner);
             if (this.ProxyEndPoint != null)
             {
                 sb.AppendFormat("Proxy Address\t:\t{0}\n", this.ProxyEndPoint);
             }
-            sb.AppendLine("------------------------------------------------------------");
+            sb.AppendLine("----------------------------------------------------------------------");
             return sb.ToString();
         }
 
@@ -86,7 +86,7 @@ namespace SCVProxy
                         else
                         {
                             response = this.miner.Fetch(request, this.ProxyEndPoint, this.ProxyEndPoint != null);
-                            if (response != null)
+                            if (response != null && stream.CanWrite)
                             {
                                 stream.Write(response.Binary, 0, response.Length);
                                 // Proxy-Connection: keep-alive

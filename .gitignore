@@ -1,4 +1,5 @@
-bin
-obj
+*/bin/*.*
+!makecert.exe
+obj/
 *.suo
 *.user
