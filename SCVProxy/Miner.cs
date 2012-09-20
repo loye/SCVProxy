@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
@@ -75,13 +76,25 @@ namespace SCVProxy
 
     public class WebMiner : IMiner
     {
-        private string minerUrl = ConfigurationManager.AppSettings["WebMinerUrl"];
+        private List<string> minerUrlList = ConfigurationManager.AppSettings["WebMinerUrl"].Split('|').ToList();
 
+        /// <summary>
+        /// SCV-SSL     optional
+        /// SCV-Host    required
+        /// SCV-Port    required
+        /// SCV-IP      optional
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="endPoint"></param>
+        /// <param name="byProxy"></param>
+        /// <returns></returns>
         public HttpPackage Fetch(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
         {
-            byte[] requestBin = ASCIIEncoding.ASCII.GetBytes(Convert.ToBase64String(request.Binary, 0, request.Length));
+            string minerUrl = minerUrlList[new Random().Next(0, minerUrlList.Count)];
 
-            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(this.minerUrl);
+            //byte[] requestBin = ASCIIEncoding.ASCII.GetBytes(Convert.ToBase64String(request.Binary, 0, request.Length));
+
+            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(minerUrl);
             httpWebRequest.Method = "POST";
             httpWebRequest.Headers["SCV-SSL"] = request.IsSSL.ToString();
             httpWebRequest.Headers["SCV-Host"] = request.Host;
@@ -112,7 +125,7 @@ namespace SCVProxy
 
         public override string ToString()
         {
-            return String.Format("{0} <{1}>", this.GetType().Name, this.minerUrl);
+            return String.Format("{0} <{1}>", this.GetType().Name, this.minerUrlList[0]);
         }
     }
 }
