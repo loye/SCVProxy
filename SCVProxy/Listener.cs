@@ -85,7 +85,7 @@ namespace SCVProxy
                         }
                         else
                         {
-                            response = this.miner.Fech(request, this.ProxyEndPoint, this.ProxyEndPoint != null);
+                            response = this.miner.Fetch(request, this.ProxyEndPoint, this.ProxyEndPoint != null);
                             if (response != null)
                             {
                                 stream.Write(response.Binary, 0, response.Length);

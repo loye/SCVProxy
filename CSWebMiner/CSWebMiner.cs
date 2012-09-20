@@ -39,8 +39,10 @@ namespace SCVProxy.CSWebMiner
 
                 IPEndPoint endPoint = new IPEndPoint(ip, port);
                 HttpPackage requestPackage = HttpPackage.Read(buffer);
+                requestPackage.Host = host;
+                requestPackage.Port = port;
                 requestPackage.IsSSL = isSSL;
-                HttpPackage responsePackage = miner.Fech(requestPackage, endPoint);
+                HttpPackage responsePackage = miner.Fetch(requestPackage, endPoint);
 
                 response.Headers["SCV-Length"] = responsePackage.Length.ToString();
                 using (Stream stream = response.OutputStream)

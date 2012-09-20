@@ -10,12 +10,12 @@ namespace SCVProxy
 {
     public interface IMiner
     {
-        HttpPackage Fech(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false);
+        HttpPackage Fetch(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false);
     }
 
     public class LocalMiner : IMiner
     {
-        public HttpPackage Fech(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
+        public HttpPackage Fetch(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
         {
             IPEndPoint remoteEndPoint = endPoint ?? new IPEndPoint(Dns.GetHostAddresses(request.Host).Where(a => a.AddressFamily == AddressFamily.InterNetwork).First(), request.Port);
             using (Socket socket = new Socket(remoteEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -69,7 +69,7 @@ namespace SCVProxy
 
     public class WebMiner : IMiner
     {
-        public HttpPackage Fech(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
+        public HttpPackage Fetch(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
         {
             string minerUrl = "http://localhost:800/miner";
 
