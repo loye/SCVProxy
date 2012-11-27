@@ -79,6 +79,7 @@
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="bin\bin.zip" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="bin\makecert.exe" />
