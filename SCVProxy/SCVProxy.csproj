@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CAHelper.cs" />
+    <Compile Include="Config.cs" />
     <Compile Include="HttpPackage.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Miner.cs" />

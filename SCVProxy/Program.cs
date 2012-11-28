@@ -11,20 +11,51 @@ namespace SCVProxy
     {
         static void Main(string[] args)
         {
-            //new Listener<LocalMiner>("127.0.0.1", 1002).Start();
-            //new Listener<LocalMiner>("127.0.0.1", 1000, "127.0.0.1", 1001).Start();
-            new Listener<WebMiner>("127.0.0.1", 1000).Start();
-            //new Listener<WebMiner>("127.0.0.1", 1000, "127.0.0.1", 8888).Start();
+            IListener listener;
+
+            switch (Config.MinerType)
+            {
+                case "WebMiner":
+                    listener = new Listener<WebMiner>(Config.ListenAddress, Config.ListenPort);
+                    break;
+                case "LocalMiner":
+                default:
+                    listener = new Listener<LocalMiner>(Config.ListenAddress, Config.ListenPort);
+                    break;
+            }
+            if (!String.IsNullOrEmpty(Config.ProxyAddress))
+            {
+                listener.ProxyEndPoint = new IPEndPoint(IPAddress.Parse(Config.ProxyAddress), Config.ProxyPort);
+            }
+
+            listener.Start();
 
             while (true)
             {
-                if (Console.ReadKey().Key == ConsoleKey.T)
+                var key = Console.ReadKey().Key;
+                Console.WriteLine();
+                switch (key)
                 {
-                    Console.WriteLine();
-                    Console.WriteLine("Threads:" + System.Diagnostics.Process.GetCurrentProcess().Threads.Count);
+                    case ConsoleKey.H:
+                        Logger.Info(
+@"H: Help
+I: Show information
+C: Clear screen
+T: Show threads", ConsoleColor.Green);
+                        break;
+                    case ConsoleKey.I:
+                        Logger.Info(listener.ToString(), ConsoleColor.Green);
+                        break;
+                    case ConsoleKey.C:
+                        Console.Clear();
+                        break;
+                    case ConsoleKey.T:
+                        Logger.Info("Threads:" + System.Diagnostics.Process.GetCurrentProcess().Threads.Count, ConsoleColor.Green);
+                        break;
+                    default:
+                        break;
                 }
             }
         }
-
     }
 }

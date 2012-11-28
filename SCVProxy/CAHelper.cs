@@ -14,7 +14,7 @@ namespace SCVProxy
         private const string makeCertParamsEnd = "-pe -ss my -n \"CN={0}, OU=Loye\" -sky exchange -in \"SCVProxy\" -is root -cy end -a sha1 -m 120";
         private const string makeCertSubject = "CN={0}, OU=Loye";
         private const string makeCertRootDomain = "SCVProxy";
-        private static readonly string MAKECERT_FILENAME = ConfigurationManager.AppSettings["MakeCertFileName"];
+        private static readonly string MAKECERT_FILENAME = Config.MakeCertFileName;
         private static readonly ConcurrentDictionary<string, X509Certificate2> certificateCache = new ConcurrentDictionary<string, X509Certificate2>();
         private static X509Certificate2 rootCert;
         private static readonly ReaderWriterLockSlim caRWLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
@@ -131,7 +131,7 @@ namespace SCVProxy
                 }
                 else
                 {
-                    Logger.Message(String.Format("Create Certification: {0}", cert.Subject), 0, ConsoleColor.DarkYellow);
+                    Logger.Message(String.Format("Create Certification: {0}", cert.Subject), 1, ConsoleColor.DarkYellow);
                 }
             }
             return cert;

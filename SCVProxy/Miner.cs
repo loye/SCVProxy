@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -37,6 +36,7 @@ namespace SCVProxy
                     stream.Write(request.Binary, 0, request.Length);
                     HttpPackage response = stream.CanRead ? HttpPackage.Read(stream) : null;
                     stream.Close();
+                    response.Label = this.ToString();
                     return response;
                 }
             }
@@ -76,7 +76,7 @@ namespace SCVProxy
 
     public class WebMiner : IMiner
     {
-        private List<string> minerUrlList = ConfigurationManager.AppSettings["WebMinerUrl"].Split('|').ToList();
+        private List<string> minerUrlList = Config.WebMinerUrlList;
 
         /// <summary>
         /// SCV-SSL     optional
@@ -92,9 +92,8 @@ namespace SCVProxy
         {
             string minerUrl = minerUrlList[new Random().Next(0, minerUrlList.Count)];
 
-            //byte[] requestBin = ASCIIEncoding.ASCII.GetBytes(Convert.ToBase64String(request.Binary, 0, request.Length));
-
             HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(minerUrl);
+            httpWebRequest.KeepAlive = false;
             httpWebRequest.Method = "POST";
             httpWebRequest.Headers["SCV-SSL"] = request.IsSSL.ToString();
             httpWebRequest.Headers["SCV-Host"] = request.Host;
@@ -109,10 +108,10 @@ namespace SCVProxy
                 stream.Write(request.Binary, 0, request.Length);
             }
             byte[] buffer;
-            using (WebResponse response = httpWebRequest.GetResponse())
+            using (WebResponse webResponse = httpWebRequest.GetResponse())
             {
-                buffer = new byte[response.ContentLength];
-                using (Stream stream = response.GetResponseStream())
+                buffer = new byte[webResponse.ContentLength];
+                using (Stream stream = webResponse.GetResponseStream())
                 {
                     for (int s = 0, l = buffer.Length - s, length = stream.Read(buffer, s, l);
                          s + length < buffer.Length;
@@ -120,7 +119,9 @@ namespace SCVProxy
                 }
             }
 
-            return HttpPackage.Read(buffer);
+            HttpPackage response = HttpPackage.Read(buffer);
+            response.Label = String.Format("{0} <{1}>", this.GetType().Name, minerUrl);
+            return response;
         }
 
         public override string ToString()

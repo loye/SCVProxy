@@ -47,6 +47,8 @@ namespace SCVProxy
 
         public bool IsSSL { get; set; }
 
+        public string Label { get; set; }
+
 
         private HttpPackage(Match match)
         {

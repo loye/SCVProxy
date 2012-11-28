@@ -9,7 +9,14 @@ using System.Text;
 
 namespace SCVProxy
 {
-    public class Listener<T> where T : IMiner, new()
+    public interface IListener
+    {
+        IPEndPoint ProxyEndPoint { get; set; }
+
+        IListener Start();
+    }
+
+    public class Listener<T> : IListener where T : IMiner, new()
     {
         private TcpListener tcpListener;
 
@@ -29,11 +36,12 @@ namespace SCVProxy
             this.ProxyEndPoint = new IPEndPoint(IPAddress.Parse(proxyIp), proxyPort);
         }
 
-        public void Start()
+        public IListener Start()
         {
             this.tcpListener.Start(50);
             Logger.Info(this.ToString());
             this.tcpListener.BeginAcceptTcpClient(new AsyncCallback(DoAccept), tcpListener);
+            return this;
         }
 
         public override string ToString()
@@ -108,10 +116,11 @@ namespace SCVProxy
                                 request.StartLine,
                                 response == null
                                     ? null
-                                    : String.Format("\n[{0}] {1}",
+                                    : String.Format("\n[{0}] {1}{2}\n",
                                         (endTime - startTime).ToString(),
-                                        response.StartLine)),
-                            0,
+                                        response.StartLine,
+                                        response.Label)),
+                            1,
                             (response != null || request.HttpMethod == "CONNECT") ? (isSsl ? ConsoleColor.DarkYellow : ConsoleColor.Gray) : ConsoleColor.Red);
                     } // end of for
                 }

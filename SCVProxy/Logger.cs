@@ -16,9 +16,9 @@ namespace SCVProxy
             Console.BufferWidth = 200;
         }
 
-        public static void Message(string message, int level = 0, ConsoleColor color = ConsoleColor.Gray)
+        public static void Message(string message, int level = 1, ConsoleColor color = ConsoleColor.Gray)
         {
-            if (level == -1 || level >= logLevel)
+            if (level <= 0 || level >= logLevel)
             {
                 lock (consoleLocker)
                 {
@@ -31,7 +31,7 @@ namespace SCVProxy
 
         public static void Info(string message, ConsoleColor color = ConsoleColor.Gray)
         {
-            Message(message, -1, color);
+            Message(message, 0, color);
         }
 
         public static void Warnning(string message)
