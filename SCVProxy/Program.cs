@@ -1,9 +1,5 @@
 ﻿using System;
-using System.IO;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace SCVProxy
 {
@@ -15,8 +11,8 @@ namespace SCVProxy
 
             switch (Config.MinerType)
             {
-                case "WebMiner":
-                    listener = new Listener<WebMiner>(Config.ListenAddress, Config.ListenPort);
+                case "HttpMiner":
+                    listener = new Listener<HttpMiner>(Config.ListenAddress, Config.ListenPort);
                     break;
                 case "LocalMiner":
                 default:
@@ -41,7 +37,8 @@ namespace SCVProxy
 @"H: Help
 I: Show information
 C: Clear screen
-T: Show threads", ConsoleColor.Green);
+T: Show threads",
+                            ConsoleColor.Green);
                         break;
                     case ConsoleKey.I:
                         Logger.Info(listener.ToString(), ConsoleColor.Green);

@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SCVProxy
 {
@@ -36,7 +37,6 @@ namespace SCVProxy
                     stream.Write(request.Binary, 0, request.Length);
                     HttpPackage response = stream.CanRead ? HttpPackage.Read(stream) : null;
                     stream.Close();
-                    response.Label = this.ToString();
                     return response;
                 }
             }
@@ -74,9 +74,13 @@ namespace SCVProxy
         }
     }
 
-    public class WebMiner : IMiner
+    public class HttpMiner : IMiner
     {
-        private List<string> minerUrlList = Config.WebMinerUrlList;
+        private List<MinerEndPoint> endPointList = Config.HttpMinerEndPointList;
+
+        private bool isEncrypted = Config.Encrypt;
+
+        private LocalMiner localMiner = new LocalMiner();
 
         /// <summary>
         /// SCV-SSL     optional
@@ -90,43 +94,52 @@ namespace SCVProxy
         /// <returns></returns>
         public HttpPackage Fetch(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
         {
-            string minerUrl = minerUrlList[new Random().Next(0, minerUrlList.Count)];
+            HttpPackage response;
+            MinerEndPoint minerEndPoint = this.endPointList[new Random().Next(0, this.endPointList.Count)];
+            string header = String.Format(
+@"POST {0} HTTP/1.1
+Host: {1}
+Content-Length: {2}
+Connection: Close
+SCV-SSL: {3}
+SCV-Host: {4}
+SCV-Port: {5}
+SCV-IP: {6}
+SCV-Encrypted: {7}
 
-            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(minerUrl);
-            httpWebRequest.KeepAlive = false;
-            httpWebRequest.Method = "POST";
-            httpWebRequest.Headers["SCV-SSL"] = request.IsSSL.ToString();
-            httpWebRequest.Headers["SCV-Host"] = request.Host;
-            httpWebRequest.Headers["SCV-Port"] = request.Port.ToString();
-            httpWebRequest.Headers["SCV-IP"] = Dns.GetHostAddresses(request.Host).Where(a => a.AddressFamily == AddressFamily.InterNetwork).First().ToString();
-            if (byProxy && endPoint != null)
+",
+            minerEndPoint.Url,
+            minerEndPoint.Host,
+            request.Length,
+            request.IsSSL,
+            request.Host,
+            request.Port,
+            Dns.GetHostAddresses(request.Host).Where(a => a.AddressFamily == AddressFamily.InterNetwork).First(),
+            isEncrypted);
+            byte[] headerBin = ASCIIEncoding.ASCII.GetBytes(header);
+            byte[] bin;
+            int lenth = headerBin.Length + request.Length;
+            using (MemoryStream mem = new MemoryStream(lenth))
             {
-                httpWebRequest.Proxy = new WebProxy(endPoint.Address.ToString(), endPoint.Port);
+                mem.Write(headerBin, 0, headerBin.Length);
+                mem.Write(request.Binary, 0, request.Length);
+                bin = mem.GetBuffer();
             }
-            using (Stream stream = httpWebRequest.GetRequestStream())
-            {
-                stream.Write(request.Binary, 0, request.Length);
-            }
-            byte[] buffer;
-            using (WebResponse webResponse = httpWebRequest.GetResponse())
-            {
-                buffer = new byte[webResponse.ContentLength];
-                using (Stream stream = webResponse.GetResponseStream())
-                {
-                    for (int s = 0, l = buffer.Length - s, length = stream.Read(buffer, s, l);
-                         s + length < buffer.Length;
-                         s += length, l = buffer.Length - s, length = stream.Read(buffer, s, l)) ;
-                }
-            }
+            HttpPackage httpRequest = HttpPackage.Read(bin, lenth, headerBin.Length);
+            httpRequest.IsSSL = minerEndPoint.IsSSL;
 
-            HttpPackage response = HttpPackage.Read(buffer);
-            response.Label = String.Format("{0} <{1}>", this.GetType().Name, minerUrl);
+            HttpPackage httpResponse = localMiner.Fetch(httpRequest, endPoint ?? minerEndPoint.EndPoint, byProxy);
+            using (MemoryStream mem = new MemoryStream(httpResponse.ContentLength))
+            {
+                mem.Write(httpResponse.Binary, httpResponse.ContentOffset, httpResponse.ContentLength);
+                response = HttpPackage.Read(mem.GetBuffer(), httpResponse.ContentLength);
+            }
             return response;
         }
 
         public override string ToString()
         {
-            return String.Format("{0} <{1}>", this.GetType().Name, String.Join("|", this.minerUrlList));
+            return String.Format("{0} <{1}>", this.GetType().Name, String.Join("|", this.endPointList.Select(e => e.Url)));
         }
     }
 }

@@ -116,10 +116,9 @@ namespace SCVProxy
                                 request.StartLine,
                                 response == null
                                     ? null
-                                    : String.Format("\n[{0}] {1}{2}\n",
+                                    : String.Format("\n[{0}] {1}\n",
                                         (endTime - startTime).ToString(),
-                                        response.StartLine,
-                                        response.Label)),
+                                        response.StartLine)),
                             1,
                             (response != null || request.HttpMethod == "CONNECT") ? (isSsl ? ConsoleColor.DarkYellow : ConsoleColor.Gray) : ConsoleColor.Red);
                     } // end of for

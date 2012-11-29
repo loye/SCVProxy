@@ -8,14 +8,17 @@ namespace SCVProxy
 {
     public class HttpPackage
     {
-        private const int BUFFER_LENGTH = 4096;
+        private const int BUFFER_LENGTH = 1024;
+
+        private const int BUFFER_LENGTH_LONG = 4096;
 
         private static readonly Regex HEADER_REGEX = new Regex(
-            @"(?:^(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:\w+://)?(?<host>[^/: ]+)?(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|^(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
+            @"(?:^(?<request>(?<method>GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)\s(?<url>(?:(?<schema>\w+)://)?(?<host>[^/: ]+)?(?:\:(?<port>\d+))?\S*)\s(?<version>.*)\r\n)|^(?<response>(?<version>HTTP\S+)\s(?<status>(?<code>\d+).*)\r\n))(?:(?<key>[\w\-]+):\s?(?<value>.*)\r\n)*\r\n",
             RegexOptions.Compiled);
 
         private int _chunkedNextBlockOffset;
 
+        #region Properties
 
         public string Host { get; set; }
 
@@ -47,8 +50,7 @@ namespace SCVProxy
 
         public bool IsSSL { get; set; }
 
-        public string Label { get; set; }
-
+        #endregion
 
         private HttpPackage(Match match)
         {
@@ -57,7 +59,9 @@ namespace SCVProxy
                 this.HttpMethod = match.Groups["method"].Value;
                 this.Url = match.Groups["url"].Value;
                 this.Host = match.Groups["host"].Value;
-                this.Port = match.Groups["port"].Success ? int.Parse(match.Groups["port"].Value) : 80;
+                this.Port = match.Groups["port"].Success
+                    ? int.Parse(match.Groups["port"].Value)
+                    : (match.Groups["schema"].Success && match.Groups["schema"].Value.ToLower() == "https" ? 443 : 80);
                 this.Version = match.Groups["version"].Value;
                 this.StartLine = match.Groups["request"].Value;
             }
@@ -95,7 +99,9 @@ namespace SCVProxy
             byte[] buffer = new byte[BUFFER_LENGTH];
             using (MemoryStream mem = new MemoryStream())
             {
-                for (int len = stream.Read(buffer, 0, buffer.Length); len > 0; len = stream.Read(buffer, 0, buffer.Length))
+                for (int len = stream.Read(buffer, 0, buffer.Length), loopCount = 1;
+                    len > 0;
+                    buffer = ++loopCount == 3 ? new byte[BUFFER_LENGTH_LONG] : buffer, len = stream.Read(buffer, 0, buffer.Length))
                 {
                     mem.Write(buffer, 0, len);
                     byte[] bin = mem.GetBuffer();
@@ -117,17 +123,33 @@ namespace SCVProxy
 
         public static HttpPackage Read(byte[] bin)
         {
+            return Read(bin, bin.Length, bin.Length);
+        }
+
+        public static HttpPackage Read(byte[] bin, int length)
+        {
+            return Read(bin, length, length);
+        }
+
+        public static HttpPackage Read(byte[] bin, int length, int headerLength)
+        {
             HttpPackage package = null;
-            ValidatePackage(bin, bin.Length, ref package);
+            ValidatePackage(bin, length, headerLength, ref package);
             return package;
         }
 
+
         private static bool ValidatePackage(byte[] bin, int length, ref HttpPackage package)
+        {
+            return ValidatePackage(bin, length, length, ref package);
+        }
+
+        private static bool ValidatePackage(byte[] bin, int length, int headerLength, ref HttpPackage package)
         {
             bool isValid = false;
             if (package == null)
             {
-                string str = ASCIIEncoding.ASCII.GetString(bin, 0, length);
+                string str = ASCIIEncoding.ASCII.GetString(bin, 0, headerLength);
                 Match match = HEADER_REGEX.Match(str);
                 if (match.Success)
                 {
