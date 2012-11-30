@@ -64,8 +64,8 @@ namespace SCVProxy.CSWebMiner
                 }
                 catch (Exception ex)
                 {
-                    response.StatusCode = 500;
                     response.Clear();
+                    response.Headers["SCV-Exception"] = ex.GetType().FullName;
                     response.Write(ex.Message);
                     response.End();
                 }

@@ -139,24 +139,30 @@ SCV-Encrypted: {8}
 
             if (httpResponse != null && httpResponse.StatusCode == 200)
             {
-                byte[] responseBin;
-                using (MemoryStream mem = new MemoryStream(httpResponse.ContentLength))
+                if (!httpResponse.HeaderItems.ContainsKey("SCV-Exception"))
                 {
-                    mem.Write(httpResponse.Binary, httpResponse.ContentOffset, httpResponse.ContentLength);
-                    responseBin = mem.GetBuffer();
+                    byte[] responseBin;
+                    using (MemoryStream mem = new MemoryStream(httpResponse.ContentLength))
+                    {
+                        mem.Write(httpResponse.Binary, httpResponse.ContentOffset, httpResponse.ContentLength);
+                        responseBin = mem.GetBuffer();
+                    }
+                    if (isEncrypted)
+                    {
+                        encryptionProvider.Decrypt(responseBin, httpResponse.ContentLength);
+                    }
+                    return HttpPackage.Read(responseBin, httpResponse.ContentLength);
                 }
-                if (isEncrypted)
+                else
                 {
-                    encryptionProvider.Decrypt(responseBin, httpResponse.ContentLength);
+                    Logger.Error(String.Format("Exception From Remote Miner <{0}>:\r\nException: {1}\r\n{2}",
+                        minerEndPoint.Url,
+                        httpResponse.HeaderItems["SCV-Exception"],
+                        ASCIIEncoding.ASCII.GetString(httpResponse.Binary, httpResponse.ContentOffset, httpResponse.ContentLength)));
+                    return null;
                 }
-                return HttpPackage.Read(responseBin, httpResponse.ContentLength);
             }
-            else
-            {
-                Logger.Error("Exception From Remote Miner:\r\n" +
-                    ASCIIEncoding.ASCII.GetString(httpResponse.Binary, 0, httpResponse.Length));
-                return null;
-            }
+            return null;
         }
 
         public override string ToString()
