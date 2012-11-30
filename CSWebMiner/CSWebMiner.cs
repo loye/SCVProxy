@@ -31,7 +31,12 @@ namespace SCVProxy.CSWebMiner
                     bool isEncrypted = bool.TryParse(request.Headers["SCV-Encrypted"], out isEncrypted) && isEncrypted;
                     string host = request.Headers["SCV-Host"];
                     int port = int.Parse(request.Headers["SCV-Port"]);
-                    IPAddress ip = String.IsNullOrEmpty(request.Headers["SCV-IP"]) ? Dns.GetHostAddresses(host)[0] : IPAddress.Parse(request.Headers["SCV-IP"]);
+                    IPAddress ip = String.IsNullOrEmpty(request.Headers["SCV-IP"]) ? DnsHelper.GetHostAddress(host) : IPAddress.Parse(request.Headers["SCV-IP"]);
+
+                    if (ip == null)
+                    {
+                        throw new Exception("DNS Lookup Failed");
+                    }
 
                     EncryptionProvider encryptionProvider = isEncrypted ? new EncryptionProvider(host) : null;
 
