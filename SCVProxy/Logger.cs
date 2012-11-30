@@ -6,19 +6,12 @@ namespace SCVProxy
     internal static class Logger
     {
         private static readonly object consoleLocker = new object();
-        private static readonly int logLevel = 0;
 
-        static Logger()
-        {
-            Console.Title = "SCVProxy";
-            Console.ForegroundColor = ConsoleColor.Black;
-            Console.BufferHeight = 5000;
-            Console.BufferWidth = 200;
-        }
+        public static int LogLevel = 0;
 
         public static void Message(string message, int level = 1, ConsoleColor color = ConsoleColor.Gray)
         {
-            if (level <= 0 || level >= logLevel)
+            if (level <= 0 || level >= LogLevel)
             {
                 lock (consoleLocker)
                 {

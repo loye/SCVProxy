@@ -10,7 +10,7 @@ namespace SCVProxy
 {
     internal static class Config
     {
-        private static readonly Regex URL_REGEX = new Regex(@"(?:http(?<ssl>s)://)?(?<host>[^/: ]+)(?:\:(?<port>\d+))?\S*", RegexOptions.Compiled);
+        private static readonly Regex URL_REGEX = new Regex(@"(?:(?<schema>\w+)\://)?(?<host>[^/: ]+)(?:\:(?<port>\d+))?\S*", RegexOptions.Compiled);
 
         public static string MakeCertFileName
         {
@@ -80,14 +80,23 @@ namespace SCVProxy
                     .Select(u =>
                         {
                             Match match = URL_REGEX.Match(u);
+                            if (!match.Success)
+                            {
+                                return null;
+                            }
                             string host = match.Groups["host"].Value;
-                            bool isSSL = match.Groups["ssl"].Success;
-                            IPAddress ipAddress = Dns.GetHostAddresses(host).Where(a => a.AddressFamily == AddressFamily.InterNetwork).First();
+                            IPAddress ipAddress;
+                            if (!DnsHelper.TryGetHostAddress(host, out ipAddress))
+                            {
+                                return null;
+                            }
+                            bool isSSL = match.Groups["schema"].Success && match.Groups["schema"].Value.ToLower() == "https";
                             int port = match.Groups["port"].Success ? int.Parse(match.Groups["port"].Value) : (isSSL ? 443 : 80);
-                            return !match.Success ? null : new MinerEndPoint()
+                            return new MinerEndPoint()
                             {
                                 Url = u,
                                 Host = host,
+                                Port = port,
                                 IsSSL = isSSL,
                                 EndPoint = new IPEndPoint(ipAddress, port)
                             };
@@ -105,6 +114,14 @@ namespace SCVProxy
                 return bool.TryParse(ConfigurationManager.AppSettings["HttpMiner.Encrypt"], out isEncrypted) && isEncrypted;
             }
         }
+
+        public static string Hosts
+        {
+            get
+            {
+                return ConfigurationManager.AppSettings["Hosts"];
+            }
+        }
     }
 
     internal class MinerEndPoint
@@ -112,6 +129,8 @@ namespace SCVProxy
         public string Url { get; set; }
 
         public string Host { get; set; }
+
+        public int Port { get; set; }
 
         public bool IsSSL { get; set; }
 

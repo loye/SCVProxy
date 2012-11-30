@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 
 namespace SCVProxy
@@ -7,8 +8,12 @@ namespace SCVProxy
     {
         static void Main(string[] args)
         {
-            IListener listener;
+            Console.Title = "SCVProxy";
+            Console.ForegroundColor = ConsoleColor.Black;
+            Console.BufferHeight = 5000;
+            Console.BufferWidth = 200;
 
+            IListener listener;
             switch (Config.MinerType)
             {
                 case "HttpMiner":
@@ -37,7 +42,10 @@ namespace SCVProxy
 @"H: Help
 I: Show information
 C: Clear screen
-T: Show threads",
+T: Show threads
+,: Decrease log level
+.: Increase log level
+",
                             ConsoleColor.Green);
                         break;
                     case ConsoleKey.I:
@@ -48,6 +56,12 @@ T: Show threads",
                         break;
                     case ConsoleKey.T:
                         Logger.Info("Threads:" + System.Diagnostics.Process.GetCurrentProcess().Threads.Count, ConsoleColor.Green);
+                        break;
+                    case ConsoleKey.OemComma: //,
+                    case ConsoleKey.OemPeriod: //.
+                        int level = Logger.LogLevel + (key == ConsoleKey.OemComma ? -1 : 1);
+                        Logger.LogLevel = level < 0 ? 0 : level > 3 ? 3 : level;
+                        Logger.Info("Log level is changed to: " + Logger.LogLevel);
                         break;
                     default:
                         break;

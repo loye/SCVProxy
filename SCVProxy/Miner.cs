@@ -19,7 +19,7 @@ namespace SCVProxy
     {
         public HttpPackage Fetch(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
         {
-            IPEndPoint remoteEndPoint = endPoint ?? new IPEndPoint(Dns.GetHostAddresses(request.Host).Where(a => a.AddressFamily == AddressFamily.InterNetwork).First(), request.Port);
+            IPEndPoint remoteEndPoint = endPoint ?? new IPEndPoint(DnsHelper.GetHostAddress(request.Host), request.Port);
             using (Socket socket = new Socket(remoteEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
             {
                 socket.Connect(remoteEndPoint);
@@ -83,10 +83,11 @@ namespace SCVProxy
         private LocalMiner localMiner = new LocalMiner();
 
         /// <summary>
-        /// SCV-SSL     optional
-        /// SCV-Host    required
-        /// SCV-Port    required
-        /// SCV-IP      optional
+        /// SCV-Host        required
+        /// SCV-Port        required
+        /// SCV-IP          optional
+        /// SCV-SSL         optional
+        /// SCV-Encrypted   optional
         /// </summary>
         /// <param name="request"></param>
         /// <param name="endPoint"></param>
@@ -94,34 +95,40 @@ namespace SCVProxy
         /// <returns></returns>
         public HttpPackage Fetch(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
         {
-            HttpPackage response;
             MinerEndPoint minerEndPoint = this.endPointList[new Random().Next(0, this.endPointList.Count)];
+            EncryptionProvider encryptionProvider = isEncrypted ? new EncryptionProvider(request.Host) : null;
             string header = String.Format(
 @"POST {0} HTTP/1.1
-Host: {1}
-Content-Length: {2}
+Host: {1}:{2}
+Content-Length: {3}
 Connection: Close
-SCV-SSL: {3}
 SCV-Host: {4}
 SCV-Port: {5}
 SCV-IP: {6}
-SCV-Encrypted: {7}
+SCV-SSL: {7}
+SCV-Encrypted: {8}
 
 ",
             minerEndPoint.Url,
             minerEndPoint.Host,
+            minerEndPoint.Port,
             request.Length,
-            request.IsSSL,
             request.Host,
             request.Port,
-            Dns.GetHostAddresses(request.Host).Where(a => a.AddressFamily == AddressFamily.InterNetwork).First(),
+            DnsHelper.GetHostAddress(request.Host),
+            request.IsSSL,
             isEncrypted);
+
             byte[] headerBin = ASCIIEncoding.ASCII.GetBytes(header);
             byte[] bin;
             int lenth = headerBin.Length + request.Length;
             using (MemoryStream mem = new MemoryStream(lenth))
             {
                 mem.Write(headerBin, 0, headerBin.Length);
+                if (isEncrypted)
+                {
+                    encryptionProvider.Encrypt(request.Binary, request.Length);
+                }
                 mem.Write(request.Binary, 0, request.Length);
                 bin = mem.GetBuffer();
             }
@@ -129,12 +136,27 @@ SCV-Encrypted: {7}
             httpRequest.IsSSL = minerEndPoint.IsSSL;
 
             HttpPackage httpResponse = localMiner.Fetch(httpRequest, endPoint ?? minerEndPoint.EndPoint, byProxy);
-            using (MemoryStream mem = new MemoryStream(httpResponse.ContentLength))
+
+            if (httpResponse != null && httpResponse.StatusCode == 200)
             {
-                mem.Write(httpResponse.Binary, httpResponse.ContentOffset, httpResponse.ContentLength);
-                response = HttpPackage.Read(mem.GetBuffer(), httpResponse.ContentLength);
+                byte[] responseBin;
+                using (MemoryStream mem = new MemoryStream(httpResponse.ContentLength))
+                {
+                    mem.Write(httpResponse.Binary, httpResponse.ContentOffset, httpResponse.ContentLength);
+                    responseBin = mem.GetBuffer();
+                }
+                if (isEncrypted)
+                {
+                    encryptionProvider.Decrypt(responseBin, httpResponse.ContentLength);
+                }
+                return HttpPackage.Read(responseBin, httpResponse.ContentLength);
             }
-            return response;
+            else
+            {
+                Logger.Error("Exception From Remote Miner:\r\n" +
+                    ASCIIEncoding.ASCII.GetString(httpResponse.Binary, 0, httpResponse.Length));
+                return null;
+            }
         }
 
         public override string ToString()

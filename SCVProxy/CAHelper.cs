@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace SCVProxy
 {
-    public static class CAHelper
+    internal static class CAHelper
     {
         private const string makeCertParamsRoot = "-r -ss root -n \"CN=SCVProxy, OU=Loye\" -sky signature -cy authority -a sha1 -m 120";
         private const string makeCertParamsEnd = "-pe -ss my -n \"CN={0}, OU=Loye\" -sky exchange -in \"SCVProxy\" -is root -cy end -a sha1 -m 120";
