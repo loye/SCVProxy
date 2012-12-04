@@ -83,11 +83,14 @@ namespace SCVProxy
         private LocalMiner localMiner = new LocalMiner();
 
         /// <summary>
-        /// SCV-Host        required
-        /// SCV-Port        required
-        /// SCV-IP          optional
-        /// SCV-SSL         optional
-        /// SCV-Encrypted   optional
+        /// Request:
+        ///     SCV-Host        required
+        ///     SCV-Port        required
+        ///     SCV-IP          optional
+        ///     SCV-SSL         optional
+        ///     SCV-Encrypted   optional
+        /// Response:
+        ///     SCV-Exception   optional
         /// </summary>
         /// <param name="request"></param>
         /// <param name="endPoint"></param>

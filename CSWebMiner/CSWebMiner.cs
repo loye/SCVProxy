@@ -14,6 +14,17 @@ namespace SCVProxy.CSWebMiner
             get { return true; }
         }
 
+        /// <summary>
+        /// Request:
+        ///     SCV-Host        required
+        ///     SCV-Port        required
+        ///     SCV-IP          optional
+        ///     SCV-SSL         optional
+        ///     SCV-Encrypted   optional
+        /// Response:
+        ///     SCV-Exception   optional
+        /// </summary>
+        /// <param name="context"></param>
         public void ProcessRequest(HttpContext context)
         {
             HttpRequest request = context.Request;
@@ -27,39 +38,30 @@ namespace SCVProxy.CSWebMiner
             {
                 try
                 {
-                    bool isSSL = bool.TryParse(request.Headers["SCV-SSL"], out isSSL) && isSSL;
-                    bool isEncrypted = bool.TryParse(request.Headers["SCV-Encrypted"], out isEncrypted) && isEncrypted;
-                    string host = request.Headers["SCV-Host"];
-                    int port = int.Parse(request.Headers["SCV-Port"]);
-                    IPAddress ip = String.IsNullOrEmpty(request.Headers["SCV-IP"]) ? DnsHelper.GetHostAddress(host) : IPAddress.Parse(request.Headers["SCV-IP"]);
-
-                    if (ip == null)
-                    {
-                        throw new Exception("DNS Lookup Failed");
-                    }
-
-                    EncryptionProvider encryptionProvider = isEncrypted ? new EncryptionProvider(host) : null;
+                    SCVRequestHeader scvHeader = ParseRequest(request);
+                    EncryptionProvider encryptionProvider = scvHeader.IsEncrypted ? new EncryptionProvider(scvHeader.Host) : null;
 
                     byte[] buffer = new byte[request.ContentLength];
                     using (Stream stream = request.InputStream)
                     {
                         stream.Read(buffer, 0, buffer.Length);
                     }
-                    if (isEncrypted)
+                    if (scvHeader.IsEncrypted)
                     {
+                        // Decrypt
                         encryptionProvider.Decrypt(buffer);
                     }
                     HttpPackage requestPackage = HttpPackage.Read(buffer);
+                    requestPackage.Host = scvHeader.Host;
+                    requestPackage.Port = scvHeader.Port;
+                    requestPackage.IsSSL = scvHeader.IsSsl;
 
-                    requestPackage.Host = host;
-                    requestPackage.Port = port;
-                    requestPackage.IsSSL = isSSL;
+                    HttpPackage responsePackage = miner.Fetch(requestPackage, new IPEndPoint(scvHeader.IP, scvHeader.Port));
 
-                    HttpPackage responsePackage = miner.Fetch(requestPackage, new IPEndPoint(ip, port));
-
-                    response.Headers["SCV-IP"] = ip.ToString();
-                    if (isEncrypted)
+                    // Response
+                    if (scvHeader.IsEncrypted)
                     {
+                        // Encrypt
                         encryptionProvider.Encrypt(responsePackage.Binary, responsePackage.Length);
                     }
                     using (Stream stream = response.OutputStream)
@@ -72,7 +74,6 @@ namespace SCVProxy.CSWebMiner
                     response.Clear();
                     response.Headers["SCV-Exception"] = ex.GetType().FullName;
                     response.Write(ex.Message);
-                    response.End();
                 }
             }
             else
@@ -80,6 +81,51 @@ namespace SCVProxy.CSWebMiner
                 response.StatusCode = 404;
             }
             response.End();
+        }
+
+        /// <returns>
+        /// SCVRequestHeader:
+        ///     SCV-Host        required
+        ///     SCV-Port        required
+        ///     SCV-IP          optional
+        ///     SCV-SSL         optional
+        ///     SCV-Encrypted   optional
+        /// </returns>
+        private SCVRequestHeader ParseRequest(HttpRequest request)
+        {
+            string host = request.Headers["SCV-Host"];
+            int port = int.Parse(request.Headers["SCV-Port"]);
+
+            IPAddress ip = String.IsNullOrEmpty(request.Headers["SCV-IP"]) ? DnsHelper.GetHostAddress(host) : IPAddress.Parse(request.Headers["SCV-IP"]);
+            bool isSSL = bool.TryParse(request.Headers["SCV-SSL"], out isSSL) && isSSL;
+            bool isEncrypted = bool.TryParse(request.Headers["SCV-Encrypted"], out isEncrypted) && isEncrypted;
+
+            if (ip == null)
+            {
+                throw new Exception("DNS Lookup Failed");
+            }
+
+            return new SCVRequestHeader()
+            {
+                Host = host,
+                Port = port,
+                IP = ip,
+                IsSsl = isSSL,
+                IsEncrypted = isEncrypted
+            };
+        }
+
+        private class SCVRequestHeader
+        {
+            public string Host;
+
+            public int Port;
+
+            public IPAddress IP;
+
+            public bool IsSsl;
+
+            public bool IsEncrypted;
         }
     }
 }
