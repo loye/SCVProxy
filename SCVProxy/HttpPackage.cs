@@ -48,6 +48,8 @@ namespace SCVProxy
 
         public int ContentLength { get; private set; }
 
+        public bool IsChunked { get; private set; }
+
         public bool IsSSL { get; set; }
 
         #endregion
@@ -139,6 +141,52 @@ namespace SCVProxy
         }
 
 
+        public byte[] GetContentBinary()
+        {
+            byte[] responseBin, tempBin;
+            int length, startIndex;
+
+            if (this.IsChunked)
+            {
+                length = 0;
+                startIndex = 0;
+                using (MemoryStream mem = new MemoryStream(this.ContentLength))
+                {
+                    for (int i = this.ContentOffset, contentLength = 0;
+                        i < this.Length;
+                        i += (contentLength + 2), contentLength = 0)
+                    {
+                        for (int temp = this.Binary[i]; temp != 0x0D && i < this.Length; temp = this.Binary[++i])
+                        {
+                            contentLength = contentLength * 16 + (temp > 0x40 ? (temp > 0x60 ? temp - 0x60 : temp - 0x40) + 9 : temp - 0x30);
+                        }
+                        if (contentLength > 0)
+                        {
+                            i += 2;
+                            mem.Write(this.Binary, i, contentLength);
+                            length += contentLength;
+                        }
+                    }
+                    tempBin = mem.GetBuffer();
+                }
+            }
+            else
+            {
+                length = this.ContentLength;
+                startIndex = this.ContentOffset;
+                tempBin = this.Binary;
+            }
+
+            responseBin = new byte[length];
+            for (int i = 0, j = startIndex; i < responseBin.Length; i++, j++)
+            {
+                responseBin[i] = tempBin[j];
+            }
+
+            return responseBin;
+        }
+
+
         private static bool ValidatePackage(byte[] bin, int length, ref HttpPackage package)
         {
             return ValidatePackage(bin, length, length, ref package);
@@ -173,6 +221,7 @@ namespace SCVProxy
                     isValid = ValidateChunkedBlock(package);
                     if (isValid)
                     {
+                        package.IsChunked = true;
                         package.ContentLength = package.Length - package.ContentOffset;
                     }
                 }

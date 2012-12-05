@@ -144,24 +144,19 @@ SCV-Encrypted: {8}
             {
                 if (!httpResponse.HeaderItems.ContainsKey("SCV-Exception"))
                 {
-                    byte[] responseBin;
-                    using (MemoryStream mem = new MemoryStream(httpResponse.ContentLength))
-                    {
-                        mem.Write(httpResponse.Binary, httpResponse.ContentOffset, httpResponse.ContentLength);
-                        responseBin = mem.GetBuffer();
-                    }
+                    byte[] responseBin = httpResponse.GetContentBinary();
                     if (isEncrypted)
                     {
-                        encryptionProvider.Decrypt(responseBin, httpResponse.ContentLength);
+                        encryptionProvider.Decrypt(responseBin);
                     }
-                    return HttpPackage.Read(responseBin, httpResponse.ContentLength);
+                    return HttpPackage.Read(responseBin);
                 }
                 else
                 {
                     Logger.Error(String.Format("Exception From Remote Miner <{0}>:\r\nException: {1}\r\n{2}",
                         minerEndPoint.Url,
                         httpResponse.HeaderItems["SCV-Exception"],
-                        ASCIIEncoding.ASCII.GetString(httpResponse.Binary, httpResponse.ContentOffset, httpResponse.ContentLength)));
+                        ASCIIEncoding.ASCII.GetString(httpResponse.GetContentBinary())));
                     return null;
                 }
             }

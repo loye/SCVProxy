@@ -32,6 +32,7 @@ namespace SCVProxy.CSWebMiner
 
             if (request.HttpMethod == "GET")
             {
+                response.Headers["SCV-Miner"] = "C#";
                 response.Write("C# Miner is working!");
             }
             else if (request.HttpMethod == "POST")
@@ -68,6 +69,7 @@ namespace SCVProxy.CSWebMiner
                     {
                         stream.Write(responsePackage.Binary, 0, responsePackage.Length);
                     }
+                    response.ContentType = "image/gif";
                 }
                 catch (Exception ex)
                 {
