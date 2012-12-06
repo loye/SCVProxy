@@ -13,6 +13,8 @@ namespace SCVProxy
     {
         IPEndPoint ProxyEndPoint { get; set; }
 
+        int PendingRequestsCount { get; }
+
         IListener Start();
     }
 
@@ -22,7 +24,11 @@ namespace SCVProxy
 
         private IMiner miner;
 
+        private int pendingRequestsCount;
+
         public IPEndPoint ProxyEndPoint { get; set; }
+
+        public int PendingRequestsCount { get { return this.pendingRequestsCount; } }
 
         public Listener(string ip, int port)
         {
@@ -93,7 +99,9 @@ namespace SCVProxy
                         }
                         else
                         {
+                            this.pendingRequestsCount++;
                             response = this.miner.Fetch(request, this.ProxyEndPoint, this.ProxyEndPoint != null);
+                            this.pendingRequestsCount--;
                             if (response != null && stream.CanWrite)
                             {
                                 stream.Write(response.Binary, 0, response.Length);

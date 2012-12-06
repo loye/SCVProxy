@@ -104,7 +104,7 @@ namespace SCVProxy
 @"POST {0} HTTP/1.1
 Host: {1}:{2}
 Content-Length: {3}
-Connection: Close
+Connection: close
 SCV-Host: {4}
 SCV-Port: {5}
 SCV-IP: {6}

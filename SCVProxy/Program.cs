@@ -57,6 +57,9 @@ T: Show threads
                     case ConsoleKey.T:
                         Logger.Info("Threads:" + System.Diagnostics.Process.GetCurrentProcess().Threads.Count, ConsoleColor.Green);
                         break;
+                    case ConsoleKey.P:
+                        Logger.Info("Pending Requests: " + listener.PendingRequestsCount);
+                        break;
                     case ConsoleKey.OemComma: //,
                     case ConsoleKey.OemPeriod: //.
                         int level = Logger.LogLevel + (key == ConsoleKey.OemComma ? -1 : 1);
