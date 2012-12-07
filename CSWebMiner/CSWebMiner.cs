@@ -53,11 +53,19 @@ namespace SCVProxy.CSWebMiner
                         encryptionProvider.Decrypt(buffer);
                     }
                     HttpPackage requestPackage = HttpPackage.Read(buffer);
+                    if (requestPackage == null)
+                    {
+                        throw new Exception("request package is null!");
+                    }
                     requestPackage.Host = scvHeader.Host;
                     requestPackage.Port = scvHeader.Port;
                     requestPackage.IsSSL = scvHeader.IsSsl;
 
                     HttpPackage responsePackage = miner.Fetch(requestPackage, new IPEndPoint(scvHeader.IP, scvHeader.Port));
+                    if (responsePackage == null)
+                    {
+                        throw new Exception("response package is null!");
+                    }
 
                     // Response
                     if (scvHeader.IsEncrypted)
@@ -104,7 +112,7 @@ namespace SCVProxy.CSWebMiner
 
             if (ip == null)
             {
-                throw new Exception("DNS Lookup Failed");
+                throw new Exception("DNS lookup failed!");
             }
 
             return new SCVRequestHeader()

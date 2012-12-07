@@ -136,45 +136,44 @@ namespace SCVProxy
         public static HttpPackage Read(byte[] bin, int length, int headerLength)
         {
             HttpPackage package = null;
-            ValidatePackage(bin, length, headerLength, ref package);
-            return package;
+            return ValidatePackage(bin, length, headerLength, ref package) ? package : null;
         }
 
 
         public byte[] GetContentBinary()
         {
-            byte[] responseBin, tempBin;
-            int length, startIndex;
+            byte[] responseBin, tempBin = this.Binary;
+            int length = 0, startIndex = this.ContentOffset;
 
-            if (this.IsChunked)
+            if (this.ContentLength > 0)
             {
-                length = 0;
-                startIndex = 0;
-                using (MemoryStream mem = new MemoryStream(this.ContentLength))
+                if (this.IsChunked)
                 {
-                    for (int i = this.ContentOffset, contentLength = 0;
-                        i < this.Length;
-                        i += (contentLength + 2), contentLength = 0)
+                    using (MemoryStream mem = new MemoryStream(this.ContentLength))
                     {
-                        for (int temp = this.Binary[i]; temp != 0x0D && i < this.Length; temp = this.Binary[++i])
+                        for (int i = this.ContentOffset, contentLength = 0;
+                            i < this.Length;
+                            i += (contentLength + 2), contentLength = 0)
                         {
-                            contentLength = contentLength * 16 + (temp > 0x40 ? (temp > 0x60 ? temp - 0x60 : temp - 0x40) + 9 : temp - 0x30);
+                            for (int temp = this.Binary[i]; temp != 0x0D && i < this.Length; temp = this.Binary[++i])
+                            {
+                                contentLength = contentLength * 16 + (temp > 0x40 ? (temp > 0x60 ? temp - 0x60 : temp - 0x40) + 9 : temp - 0x30);
+                            }
+                            if (contentLength > 0)
+                            {
+                                i += 2;
+                                mem.Write(this.Binary, i, contentLength);
+                                length += contentLength;
+                            }
                         }
-                        if (contentLength > 0)
-                        {
-                            i += 2;
-                            mem.Write(this.Binary, i, contentLength);
-                            length += contentLength;
-                        }
+                        tempBin = mem.GetBuffer();
                     }
-                    tempBin = mem.GetBuffer();
+                    startIndex = 0;
                 }
-            }
-            else
-            {
-                length = this.ContentLength;
-                startIndex = this.ContentOffset;
-                tempBin = this.Binary;
+                else
+                {
+                    length = this.ContentLength;
+                }
             }
 
             responseBin = new byte[length];
@@ -218,10 +217,10 @@ namespace SCVProxy
                 }
                 else // Transfer-Encoding: chunked
                 {
+                    package.IsChunked = true;
                     isValid = ValidateChunkedBlock(package);
                     if (isValid)
                     {
-                        package.IsChunked = true;
                         package.ContentLength = package.Length - package.ContentOffset;
                     }
                 }

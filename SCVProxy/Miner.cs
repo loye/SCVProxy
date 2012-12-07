@@ -19,6 +19,10 @@ namespace SCVProxy
     {
         public HttpPackage Fetch(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
         {
+            if (request == null)
+            {
+                return null;
+            }
             IPEndPoint remoteEndPoint = endPoint ?? new IPEndPoint(DnsHelper.GetHostAddress(request.Host), request.Port);
             using (Socket socket = new Socket(remoteEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
             {
