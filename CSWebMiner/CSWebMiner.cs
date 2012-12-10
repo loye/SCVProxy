@@ -110,11 +110,6 @@ namespace SCVProxy.CSWebMiner
             bool isSSL = bool.TryParse(request.Headers["SCV-SSL"], out isSSL) && isSSL;
             bool isEncrypted = bool.TryParse(request.Headers["SCV-Encrypted"], out isEncrypted) && isEncrypted;
 
-            if (ip == null)
-            {
-                throw new Exception("DNS lookup failed!");
-            }
-
             return new SCVRequestHeader()
             {
                 Host = host,

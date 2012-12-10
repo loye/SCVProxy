@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -28,7 +29,11 @@ namespace SCVProxy
         public static IPAddress GetHostAddress(string host)
         {
             IPAddress address;
-            return TryGetHostAddress(host, out address) ? address : null;
+            if (!TryGetHostAddress(host, out address))
+            {
+                throw new Exception("DNS lookup failed!");
+            }
+            return address;
         }
 
         public static bool TryGetHostAddress(string host, out IPAddress address)

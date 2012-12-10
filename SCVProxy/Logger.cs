@@ -7,7 +7,7 @@ namespace SCVProxy
     {
         private static readonly object consoleLocker = new object();
 
-        public static int LogLevel = 0;
+        public static int LogLevel = 1;
 
         public static void Message(string message, int level = 1, ConsoleColor color = ConsoleColor.Gray)
         {

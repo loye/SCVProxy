@@ -63,7 +63,7 @@ T: Show threads
                     case ConsoleKey.OemComma: //,
                     case ConsoleKey.OemPeriod: //.
                         int level = Logger.LogLevel + (key == ConsoleKey.OemComma ? -1 : 1);
-                        Logger.LogLevel = level < 0 ? 0 : level > 3 ? 3 : level;
+                        Logger.LogLevel = level < 1 ? 1 : level > 3 ? 3 : level;
                         Logger.Info("Log level is changed to: " + Logger.LogLevel);
                         break;
                     default:

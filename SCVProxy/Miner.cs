@@ -104,6 +104,7 @@ namespace SCVProxy
         {
             MinerEndPoint minerEndPoint = this.endPointList[new Random().Next(0, this.endPointList.Count)];
             EncryptionProvider encryptionProvider = isEncrypted ? new EncryptionProvider(request.Host) : null;
+            IPAddress ip;
             string header = String.Format(
 @"POST {0} HTTP/1.1
 Host: {1}:{2}
@@ -122,7 +123,7 @@ SCV-Encrypted: {8}
             request.Length,
             request.Host,
             request.Port,
-            DnsHelper.GetHostAddress(request.Host),
+            DnsHelper.TryGetHostAddress(request.Host, out ip) ? ip : null,
             request.IsSSL,
             isEncrypted);
 

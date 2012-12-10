@@ -103,7 +103,7 @@ namespace SCVProxy
             {
                 for (int len = stream.Read(buffer, 0, buffer.Length), loopCount = 1;
                     len > 0;
-                    buffer = ++loopCount == 3 ? new byte[BUFFER_LENGTH_LONG] : buffer, len = stream.Read(buffer, 0, buffer.Length))
+                    buffer = ++loopCount == 3 ? new byte[BUFFER_LENGTH_LONG] : buffer, len = stream.CanRead ? stream.Read(buffer, 0, buffer.Length) : 0)
                 {
                     mem.Write(buffer, 0, len);
                     byte[] bin = mem.GetBuffer();
@@ -114,6 +114,7 @@ namespace SCVProxy
                             && package.HeaderItems["Connection"] == "close"
                             && !package.StartLine.Contains("Connection Established")) // Connection: close
                         {
+                            Logger.Info("Connection Closed", ConsoleColor.Blue); // Debug only
                             continue;
                         }
                         break;
