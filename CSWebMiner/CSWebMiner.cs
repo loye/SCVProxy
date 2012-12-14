@@ -71,7 +71,7 @@ namespace SCVProxy.CSWebMiner
                     if (scvHeader.IsEncrypted)
                     {
                         // Encrypt
-                        encryptionProvider.Encrypt(responsePackage.Binary, responsePackage.Length);
+                        encryptionProvider.Encrypt(responsePackage.Binary, 0, responsePackage.Length);
                     }
                     using (Stream stream = response.OutputStream)
                     {

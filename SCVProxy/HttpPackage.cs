@@ -87,6 +87,7 @@ namespace SCVProxy
             this.ContentLength = headerItems.ContainsKey("Content-Length")
                 ? int.Parse(headerItems["Content-Length"])
                 : (headerItems.ContainsKey("Transfer-Encoding") && headerItems["Transfer-Encoding"] == "chunked" ? -1 : 0);
+            this.IsChunked = this.ContentLength == -1;
             this._chunkedNextBlockOffset = this.ContentOffset;
         }
 
@@ -124,20 +125,12 @@ namespace SCVProxy
             return package;
         }
 
-        public static HttpPackage Read(byte[] bin)
-        {
-            return Read(bin, bin.Length, bin.Length);
-        }
-
-        public static HttpPackage Read(byte[] bin, int length)
-        {
-            return Read(bin, length, length);
-        }
-
-        public static HttpPackage Read(byte[] bin, int length, int headerLength)
+        public static HttpPackage Read(byte[] bin, int length = -1, int headerLength = -1)
         {
             HttpPackage package = null;
-            return ValidatePackage(bin, length, headerLength, ref package) ? package : null;
+            int len = length > 0 ? length : bin.Length;
+            int headerLen = headerLength > 0 ? headerLength : len;
+            return ValidatePackage(bin, len, headerLen, ref package) ? package : null;
         }
 
 
@@ -208,22 +201,17 @@ namespace SCVProxy
             {
                 package.Binary = bin;
                 package.Length = length;
-                if (package.ContentLength == 0)
+                if (package.IsChunked) // Transfer-Encoding: chunked
                 {
-                    isValid = true;
-                }
-                else if (package.ContentLength > 0)
-                {
-                    isValid = package.Length >= package.ContentOffset + package.ContentLength;
-                }
-                else // Transfer-Encoding: chunked
-                {
-                    package.IsChunked = true;
                     isValid = ValidateChunkedBlock(package);
                     if (isValid)
                     {
                         package.ContentLength = package.Length - package.ContentOffset;
                     }
+                }
+                else
+                {
+                    isValid = package.Length >= package.ContentOffset + package.ContentLength;
                 }
             }
             return isValid;
@@ -246,7 +234,7 @@ namespace SCVProxy
                 }
                 contentLength = contentLength * 16 + (temp > 0x40 ? (temp > 0x60 ? temp - 0x60 : temp - 0x40) + 9 : temp - 0x30);
             }
-            package._chunkedNextBlockOffset = i + 4 + contentLength;
+            package._chunkedNextBlockOffset = i + 2 + contentLength + 2; // i + \r\n + contentLength + \r\n
             return contentLength == 0 || ValidateChunkedBlock(package);
         }
     }

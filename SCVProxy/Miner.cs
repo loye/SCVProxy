@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace SCVProxy
 {
@@ -129,18 +128,18 @@ SCV-Encrypted: {8}
 
             byte[] headerBin = ASCIIEncoding.ASCII.GetBytes(header);
             byte[] bin;
-            int lenth = headerBin.Length + request.Length;
-            using (MemoryStream mem = new MemoryStream(lenth))
+            int length = headerBin.Length + request.Length;
+            using (MemoryStream mem = new MemoryStream(length))
             {
                 mem.Write(headerBin, 0, headerBin.Length);
-                if (isEncrypted)
-                {
-                    encryptionProvider.Encrypt(request.Binary, request.Length);
-                }
                 mem.Write(request.Binary, 0, request.Length);
                 bin = mem.GetBuffer();
             }
-            HttpPackage httpRequest = HttpPackage.Read(bin, lenth, headerBin.Length);
+            if (isEncrypted)
+            {
+                encryptionProvider.Encrypt(bin, headerBin.Length, request.Length);
+            }
+            HttpPackage httpRequest = HttpPackage.Read(bin, length, headerBin.Length);
             httpRequest.IsSSL = minerEndPoint.IsSSL;
 
             HttpPackage httpResponse = localMiner.Fetch(httpRequest, endPoint ?? minerEndPoint.EndPoint, byProxy);

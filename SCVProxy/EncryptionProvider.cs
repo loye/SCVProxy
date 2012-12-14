@@ -17,23 +17,23 @@ namespace SCVProxy
             }
         }
 
-        public void Encrypt(byte[] src, int length = -1)
+        public void Encrypt(byte[] src, int startIndex = 0, int length = -1, int offset = 0)
         {
-            int len = length == -1 || length > src.Length ? src.Length : length;
-            for (int i = 0; i < len; i++)
+            int len = (length == -1 || length > src.Length) ? src.Length : length + startIndex;
+            for (int i = startIndex + offset, os = offset; i < len; i++, os++)
             {
-                int steps = (i & 7) + ((i & 8) == 0 ? -8 : 1);
-                src[i] = (byte)~((src[i] + steps * seed[i & 15]) & 255);
+                int steps = (os & 7) + ((os & 8) == 0 ? -8 : 1);
+                src[i] = (byte)~((src[i] + steps * seed[os & 15]) & 255);
             }
         }
 
-        public void Decrypt(byte[] src, int length = -1)
+        public void Decrypt(byte[] src, int startIndex = 0, int length = -1, int offset = 0)
         {
-            int len = length == -1 || length > src.Length ? src.Length : length;
-            for (int i = 0; i < len; i++)
+            int len = (length == -1 || length > src.Length) ? src.Length : length + startIndex;
+            for (int i = startIndex + offset, os = offset; i < len; i++, os++)
             {
-                int steps = (i & 7) + ((i & 8) == 0 ? -8 : 1);
-                src[i] = (byte)((~src[i] - steps * seed[i & 15]) & 255);
+                int steps = (os & 7) + ((os & 8) == 0 ? -8 : 1);
+                src[i] = (byte)((~src[i] - steps * seed[os & 15]) & 255);
             }
         }
     }
