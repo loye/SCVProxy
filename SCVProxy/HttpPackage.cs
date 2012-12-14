@@ -112,10 +112,9 @@ namespace SCVProxy
                     {
                         if (package.ContentLength == 0
                             && package.HeaderItems.ContainsKey("Connection")
-                            && package.HeaderItems["Connection"] == "close"
+                            && String.Compare(package.HeaderItems["Connection"], "close", true) == 0
                             && !package.StartLine.Contains("Connection Established")) // Connection: close
                         {
-                            Logger.Info("Connection Closed", ConsoleColor.Blue); // Debug only
                             continue;
                         }
                         break;

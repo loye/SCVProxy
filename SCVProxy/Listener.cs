@@ -107,10 +107,8 @@ namespace SCVProxy
                                 stream.Write(response.Binary, 0, response.Length);
                                 stream.Flush();
                                 // Proxy-Connection: keep-alive
-                                keepAlive = (request.HeaderItems.ContainsKey("Proxy-Connection")
-                                    && request.HeaderItems["Proxy-Connection"] == "keep-alive")
-                                    && response.HeaderItems.ContainsKey("Connection")
-                                    && response.HeaderItems["Connection"] == "Keep-Alive";
+                                keepAlive = request.HeaderItems.ContainsKey("Proxy-Connection")
+                                    && String.Compare(request.HeaderItems["Proxy-Connection"], "keep-alive", true) == 0;
                             }
                         }
                         // Log Message

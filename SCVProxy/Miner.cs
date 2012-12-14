@@ -39,7 +39,7 @@ namespace SCVProxy
                     }
                     stream.Write(request.Binary, 0, request.Length);
                     HttpPackage response = stream.CanRead ? HttpPackage.Read(stream) : null;
-                    stream.Close();
+                    stream.Dispose();
                     return response;
                 }
             }
@@ -101,7 +101,7 @@ namespace SCVProxy
         /// <returns></returns>
         public HttpPackage Fetch(HttpPackage request, IPEndPoint endPoint = null, bool byProxy = false)
         {
-            MinerEndPoint minerEndPoint = this.endPointList[new Random().Next(0, this.endPointList.Count)];
+            MinerEndPoint minerEndPoint = this.endPointList.Count == 1 ? this.endPointList[0] : this.endPointList[new Random().Next(0, this.endPointList.Count)];
             EncryptionProvider encryptionProvider = isEncrypted ? new EncryptionProvider(request.Host) : null;
             IPAddress ip;
             string header = String.Format(
@@ -122,7 +122,7 @@ SCV-Encrypted: {8}
             request.Length,
             request.Host,
             request.Port,
-            DnsHelper.TryGetHostAddress(request.Host, out ip) ? ip : null,
+            null, //DnsHelper.TryGetHostAddress(request.Host, out ip) ? ip : null,
             request.IsSSL,
             isEncrypted);
 

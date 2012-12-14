@@ -66,7 +66,7 @@ namespace SCVProxy
         {
             get
             {
-                return ConfigurationManager.AppSettings["MinerType"];
+                return ConfigurationManager.AppSettings["MinerType"] ?? String.Empty;
             }
         }
 
@@ -119,7 +119,7 @@ namespace SCVProxy
         {
             get
             {
-                return ConfigurationManager.AppSettings["Hosts"];
+                return ConfigurationManager.AppSettings["Hosts"] ?? String.Empty;
             }
         }
     }
