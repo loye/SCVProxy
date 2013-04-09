@@ -26,7 +26,7 @@ namespace SCVProxy
             using (Socket socket = new Socket(remoteEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
             {
                 socket.Connect(remoteEndPoint);
-                using (NetworkStream networkStream = new NetworkStream(socket))
+                using (NetworkStream networkStream = new NetworkStream(socket, true))
                 {
                     Stream stream = networkStream;
                     if (request.IsSSL)
